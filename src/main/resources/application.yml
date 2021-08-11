@@ -1,0 +1,9 @@
+server:
+  port: 80
+
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: 12345678
+    url: "jdbc:postgresql://localhost:5432/android_user"
