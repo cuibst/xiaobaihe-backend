@@ -16,7 +16,18 @@ public class UserServices {
 
     public boolean checkPassword(String username, String password) {
         User user = selectUserByUsername(username);
-        return user != null && user.getPassword().equals(password);
+        return user != null && user.getPassword().equals(password) && user.isChecked();
     }
 
+    public boolean checkUsername(String username) {
+        return userMapper.queryUserByUsername(username) == null;
+    }
+
+    public void registerNewUser(String username, String password, String email) {
+        userMapper.insertNewUser(username, password, email);
+    }
+
+    public void updateCheckEmailStatus(String username) {
+        userMapper.updateChekcedEmailStatus(username);
+    }
 }

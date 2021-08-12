@@ -3,6 +3,9 @@ package com.java.cuiyikai.androidbackend.controllers;
 import com.alibaba.fastjson.JSONObject;
 import com.java.cuiyikai.androidbackend.entity.History;
 import com.java.cuiyikai.androidbackend.services.HistoryServices;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,11 +28,12 @@ public class HistoryController {
     @Autowired
     HistoryServices historyServices;
 
+    private static final Logger logger = LoggerFactory.getLogger(HistoryController.class);
+
     /**
      * Reply the last 10 search history of the user with the given name in json. <br>
-     * <code>
+     * Response a json as follows. <br>
      * {"data" : [(at most 10 related search history)], "status" : "ok" }
-     * </code>
      * @param username The username you want to check, given in GET method.
      * @param response The response in json
      * @throws IOException when {@link java.io.PrintWriter} encounters some internal errors.
@@ -47,5 +51,6 @@ public class HistoryController {
         reply.put("status", "ok");
         reply.put("data", result);
         printWriter.print(reply);
+        logger.info("Search history for user:{} replied.", username);
     }
 }
