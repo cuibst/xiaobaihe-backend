@@ -55,6 +55,7 @@ public class LoginController {
             reply.put("message", "log in successfully");
             reply.put("token", token.getToken());
         } else {
+            response.setStatus(406);
             logger.info("Login failed with username:{}", username);
             reply.put("status", "fail");
             reply.put("message", "password or username incorrect");

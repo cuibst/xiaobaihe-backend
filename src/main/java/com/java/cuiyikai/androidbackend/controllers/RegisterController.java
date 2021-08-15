@@ -120,4 +120,16 @@ public class RegisterController {
         reply.put("message", "email checked successfully");
         printWriter.print(reply);
     }
+
+    @GetMapping("/check/username")
+    public void checkUsername(@RequestParam String username, HttpServletResponse response) throws IOException {
+        response.setHeader("Content-type", "application/json;charset=UTF-8");
+        PrintWriter printWriter = response.getWriter();
+        JSONObject reply = new JSONObject();
+        if(userServices.checkUsername(username))
+            reply.put("status", "fail");
+        else
+            reply.put("status", "ok");
+        printWriter.print(reply);
+    }
 }
