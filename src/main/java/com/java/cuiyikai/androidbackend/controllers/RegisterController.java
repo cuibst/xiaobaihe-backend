@@ -2,14 +2,11 @@ package com.java.cuiyikai.androidbackend.controllers;
 
 import com.alibaba.fastjson.JSONObject;
 import com.java.cuiyikai.androidbackend.entity.Token;
-import com.java.cuiyikai.androidbackend.mapper.TokenMapper;
-import com.java.cuiyikai.androidbackend.mapper.UserMapper;
 import com.java.cuiyikai.androidbackend.services.TokenServices;
 import com.java.cuiyikai.androidbackend.services.UserServices;
 import org.apache.commons.mail.HtmlEmail;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
@@ -22,7 +19,7 @@ import java.util.Date;
 @RequestMapping("/api/register")
 public class RegisterController {
 
-    private final String BACKEND_ADDRESS = "http://183.172.176.163:8080/api/register/check?token=";
+    private final static String BACKEND_ADDRESS = "http://183.172.176.163:8080/api/register/check?token=";
 
     @Autowired
     private UserServices userServices;

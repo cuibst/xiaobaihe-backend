@@ -18,8 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.ZipException;
 
 @Controller
 @RequestMapping("/api/uri")

@@ -8,8 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletResponse;
@@ -38,7 +38,7 @@ public class HistoryController {
      * @param response The response in json
      * @throws IOException when {@link java.io.PrintWriter} encounters some internal errors.
      */
-    @RequestMapping(name = "/gethistory", method = RequestMethod.GET)
+    @GetMapping(name = "/gethistory")
     public void getUserHistory(@RequestParam("username") String username, HttpServletResponse response) throws IOException {
         response.setHeader("Content-type", "application/json;charset=UTF-8");
         List<History> historyList = historyServices.getLatestHistoryByUsername(username);
