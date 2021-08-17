@@ -68,4 +68,6 @@ public class TokenServices {
     public boolean isTokenValid(String token) {
         return mapper.queryValidTokenByToken(token) != null;
     }
+
+    public User queryUserByToken(String token) {return mapper.queryUserByToken(token);}
 }
