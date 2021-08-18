@@ -38,11 +38,11 @@ public class HistoryController {
      * Reply the last 10 search history of the user with the given name in json. <br>
      * Response a json as follows. <br>
      * {"data" : [(at most 10 related search history)], "status" : "ok" }
-     * @param username The username you want to check, given in GET method.
+     * @param token The username you want to check, given in GET method.
      * @param response The response in json
      * @throws IOException when {@link java.io.PrintWriter} encounters some internal errors.
      */
-    @GetMapping(name = "/gethistory")
+    @GetMapping("/gethistory")
     public void getUserHistory(@RequestParam("token") String token, HttpServletResponse response) throws IOException {
         response.setHeader("Content-type", "application/json;charset=UTF-8");
         PrintWriter printWriter = response.getWriter();
@@ -67,7 +67,7 @@ public class HistoryController {
         logger.info("Search history for user:{} replied.", username);
     }
 
-    @GetMapping(name = "/addhistory")
+    @GetMapping("/addhistory")
     public void addHistory(@RequestParam("token") String token, @RequestParam("content") String content, HttpServletResponse response) throws IOException {
         response.setHeader("Content-type", "application/json;charset=UTF-8");
         PrintWriter printWriter = response.getWriter();
