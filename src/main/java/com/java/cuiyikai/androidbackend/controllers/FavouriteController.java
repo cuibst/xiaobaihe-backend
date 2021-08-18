@@ -71,7 +71,14 @@ public class FavouriteController {
             printWriter.print(reply);
             return;
         }
-        favouriteServices.removeFromFavourite(username, jsonParam);
+
+        String key;
+        if(jsonParam.getString("key") != null)
+            key = jsonParam.getString("key");
+        else
+            key = "default";
+
+        favouriteServices.removeFromFavourite(username, jsonParam, key);
         JSONObject reply = new JSONObject();
         reply.put("status", "ok");
         printWriter.print(reply);
@@ -92,7 +99,7 @@ public class FavouriteController {
             return;
         }
         String username = tokenServices.queryUserByToken(token).getUsername();
-        if(!jsonParam.containsKey("name") || !jsonParam.containsKey("subject") || !jsonParam.containsKey("key")) {
+        if(!jsonParam.containsKey("name") || !jsonParam.containsKey("subject")) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
             reply.put("status", "fail");
@@ -105,7 +112,13 @@ public class FavouriteController {
         obj.put("name", jsonParam.getString("name"));
         obj.put("subject", jsonParam.getString("subject"));
 
-        favouriteServices.updateFavourite(username, jsonParam.getString("key"), obj);
+        String key;
+        if(jsonParam.getString("key") != null)
+            key = jsonParam.getString("key");
+        else
+            key = "default";
+
+        favouriteServices.updateFavourite(username, key, obj);
 
         JSONObject reply = new JSONObject();
         reply.put("status", "ok");

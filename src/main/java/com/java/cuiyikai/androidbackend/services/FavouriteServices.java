@@ -43,19 +43,16 @@ public class FavouriteServices {
         favouriteMapper.updateUserFavourite(userMapper.queryUserByUsername(username).getId(), favouriteJson.toJSONString());
     }
 
-    public void removeFromFavourite(String username, JSONObject value) {
+    public void removeFromFavourite(String username, JSONObject value, String key) {
         Favourite favourite = favouriteMapper.getFavouriteByUsername(username);
         JSONObject favouriteJson = JSON.parseObject(favourite.getJson());
-        outer:
-        for (Map.Entry<String, Object> entry : favouriteJson.entrySet()) {
-            JSONArray array = JSON.parseArray(entry.getValue().toString());
-            for (Object obj : array) {
-                JSONObject jsonObject = JSON.parseObject(obj.toString());
-                if(value.getString("subject").equals(jsonObject.getString("subject")) && value.getString("name").equals(jsonObject.getString("name"))) {
-                    array.remove(obj);
-                    favouriteJson.replace(entry.getKey(), array);
-                    break outer;
-                }
+        JSONArray array = favouriteJson.getJSONArray(key);
+        for (Object obj : array) {
+            JSONObject jsonObject = JSON.parseObject(obj.toString());
+            if(value.getString("subject").equals(jsonObject.getString("subject")) && value.getString("name").equals(jsonObject.getString("name"))) {
+                array.remove(obj);
+                favouriteJson.replace(key, array);
+                break;
             }
         }
         favouriteMapper.updateUserFavourite(userMapper.queryUserByUsername(username).getId(), favouriteJson.toJSONString());

@@ -107,7 +107,7 @@ public class UriController {
         return uriName;
     }
 
-    @GetMapping("/getName")
+    @GetMapping("/getname")
     public void getName(@RequestParam(name = "subject", required = false, defaultValue = "") String subject, HttpServletResponse response) throws Exception {
         response.setHeader("Content-type", "application/json;charset=UTF-8");
         PrintWriter printWriter = response.getWriter();
