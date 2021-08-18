@@ -95,13 +95,16 @@ public class UriController {
             while((line = reader.readLine()) != null) {
                 buffer.append(line);
             }
-            logger.info(buffer.toString());
             JSONObject cardResponse = JSON.parseObject(buffer.toString());
             JSONObject data = cardResponse.getJSONObject("data");
+            if(data.getString("entity_name") == null)
+                return null;
             uriName.put("name", data.getString("entity_name"));
             uriName.put("subject", uri.getSubject());
             reader.close();
         }
+        else
+            return null;
         writer.close();
         cardConnection.disconnect();
         return uriName;
