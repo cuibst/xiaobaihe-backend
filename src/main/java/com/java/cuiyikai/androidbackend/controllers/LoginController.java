@@ -2,6 +2,7 @@ package com.java.cuiyikai.androidbackend.controllers;
 
 import com.alibaba.fastjson.JSONObject;
 import com.java.cuiyikai.androidbackend.entity.Token;
+import com.java.cuiyikai.androidbackend.entity.User;
 import com.java.cuiyikai.androidbackend.services.TokenServices;
 import com.java.cuiyikai.androidbackend.services.UserServices;
 import org.slf4j.Logger;
@@ -62,4 +63,37 @@ public class LoginController {
         }
         printWriter.print(reply);
     }
+
+    @GetMapping("/exchangeToken")
+    public void exchangeToken(@RequestParam("token") String token, HttpServletResponse response) throws IOException {
+        User user = tokenServices.queryUserByToken(token);
+        response.setHeader("Content-type", "application/json;charset=UTF-8");
+        PrintWriter printWriter = response.getWriter();
+        JSONObject reply = new JSONObject();
+        if(user == null) {
+            response.setStatus(403);
+            logger.info("Login failed with token:{}", token);
+            reply.put("status", "fail");
+            reply.put("message", "Token not exist");
+            printWriter.print(reply);
+            return;
+        }
+        Token latestToken = tokenServices.queryLatestTokenByUsername(user.getUsername());
+        if(latestToken == null || !latestToken.getToken().equals(token)) {
+            response.setStatus(403);
+            logger.info("Login failed with token:{}", token);
+            reply.put("status", "fail");
+            reply.put("message", "Token not exist");
+            printWriter.print(reply);
+            return;
+        }
+        tokenServices.deleteTokenByUsername(user.getUsername());
+        token = tokenServices.insertNewToken(user.getUsername());
+        logger.info("Token exchange success");
+        reply.put("status", "ok");
+        reply.put("message", "log in successfully");
+        reply.put("token", token);
+        printWriter.print(reply);
+    }
+
 }

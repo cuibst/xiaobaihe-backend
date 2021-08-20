@@ -156,7 +156,9 @@ public class UriController {
         reply.put("status", "ok");
         JSONArray uriNames = new JSONArray();
         for (Uri uri : uriList) {
-            uriNames.add(getUriName(uri, id));
+            JSONObject uriName = getUriName(uri, id);
+            if(uriName != null)
+                uriNames.add(uriName);
         }
         reply.put("data", uriNames);
         printWriter.print(reply);
