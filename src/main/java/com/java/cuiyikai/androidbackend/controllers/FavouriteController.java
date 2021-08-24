@@ -24,10 +24,10 @@ public class FavouriteController {
     @Autowired
     TokenServices tokenServices;
 
-    @GetMapping("/getfavourite")
+    @GetMapping("/getFavourite")
     public void getFavourite(@RequestParam String token, HttpServletResponse response) throws IOException {
-        PrintWriter printWriter = response.getWriter();
         response.setHeader("Content-type", "application/json;charset=UTF-8");
+        PrintWriter printWriter = response.getWriter();
         if(!tokenServices.isTokenValid(token)) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
@@ -36,6 +36,7 @@ public class FavouriteController {
             printWriter.print(reply);
             return;
         }
+        System.out.println("Getting favourite json!!");
         String username = tokenServices.queryUserByToken(token).getUsername();
         Favourite favourite = favouriteServices.getFavouriteByUsername(username);
         if(favourite == null) {
@@ -48,12 +49,11 @@ public class FavouriteController {
         printWriter.print(reply);
     }
 
-    @PostMapping("/removefavourite")
-    public void removeFavourite(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
+    @PostMapping("/updateFavourite")
+    public void updateFavourite(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
+        response.setHeader("Content-type", "application/json;charset=UTF-8");
         PrintWriter printWriter = response.getWriter();
-        response.setHeader("Content-type", "application/json;charset=UTF-8");
         String token = jsonParam.getString("token");
-        response.setHeader("Content-type", "application/json;charset=UTF-8");
         if(!tokenServices.isTokenValid(token)) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
@@ -63,7 +63,7 @@ public class FavouriteController {
             return;
         }
         String username = tokenServices.queryUserByToken(token).getUsername();
-        if(!jsonParam.containsKey("name") || !jsonParam.containsKey("subject")) {
+        if(!jsonParam.containsKey("name") || !jsonParam.containsKey("subject") || !jsonParam.containsKey("checked")) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
             reply.put("status", "fail");
@@ -72,24 +72,22 @@ public class FavouriteController {
             return;
         }
 
-        String key;
-        if(jsonParam.getString("key") != null)
-            key = jsonParam.getString("key");
-        else
-            key = "default";
+        System.out.println(jsonParam.getString("name"));
+        System.out.println(jsonParam.getString("subject"));
+        System.out.println(jsonParam.getString("checked"));
 
-        favouriteServices.removeFromFavourite(username, jsonParam, key);
+        favouriteServices.updateFavourite(username, jsonParam);
+
         JSONObject reply = new JSONObject();
         reply.put("status", "ok");
         printWriter.print(reply);
     }
 
-    @PostMapping("/addfavourite")
-    public void addFavourite(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
+    @PostMapping("/removeDirectory")
+    public void removeDirectory(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
+        response.setHeader("Content-type", "application/json;charset=UTF-8");
         PrintWriter printWriter = response.getWriter();
-        response.setHeader("Content-type", "application/json;charset=UTF-8");
         String token = jsonParam.getString("token");
-        response.setHeader("Content-type", "application/json;charset=UTF-8");
         if(!tokenServices.isTokenValid(token)) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
@@ -99,7 +97,7 @@ public class FavouriteController {
             return;
         }
         String username = tokenServices.queryUserByToken(token).getUsername();
-        if(!jsonParam.containsKey("name") || !jsonParam.containsKey("subject")) {
+        if(!jsonParam.containsKey("directory")) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
             reply.put("status", "fail");
@@ -108,18 +106,98 @@ public class FavouriteController {
             return;
         }
 
-        JSONObject obj = new JSONObject();
-        obj.put("name", jsonParam.getString("name"));
-        obj.put("subject", jsonParam.getString("subject"));
+        favouriteServices.removeDirectory(username, jsonParam.getString("directory"));
+        JSONObject reply = new JSONObject();
+        reply.put("status", "ok");
+        printWriter.print(reply);
+    }
 
-        String key;
-        if(jsonParam.getString("key") != null)
-            key = jsonParam.getString("key");
-        else
-            key = "default";
+    @PostMapping("/addDirectory")
+    public void addDirectory(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
+        response.setHeader("Content-type", "application/json;charset=UTF-8");
+        PrintWriter printWriter = response.getWriter();
+        String token = jsonParam.getString("token");
+        if(!tokenServices.isTokenValid(token)) {
+            response.setStatus(406);
+            JSONObject reply = new JSONObject();
+            reply.put("status", "fail");
+            reply.put("message", "bad token");
+            printWriter.print(reply);
+            return;
+        }
+        String username = tokenServices.queryUserByToken(token).getUsername();
+        if(!jsonParam.containsKey("directory")) {
+            response.setStatus(406);
+            JSONObject reply = new JSONObject();
+            reply.put("status", "fail");
+            reply.put("message", "bad request");
+            printWriter.print(reply);
+            return;
+        }
 
-        favouriteServices.updateFavourite(username, key, obj);
+        boolean res = favouriteServices.addDirectory(username, jsonParam.getString("directory"));
+        JSONObject reply = new JSONObject();
+        reply.put("status", res ? "ok" : "fail");
+        printWriter.print(reply);
+    }
 
+    @PostMapping("/updateDirectory")
+    public void updateDirectory(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
+        response.setHeader("Content-type", "application/json;charset=UTF-8");
+        PrintWriter printWriter = response.getWriter();
+        String token = jsonParam.getString("token");
+        if(!tokenServices.isTokenValid(token)) {
+            response.setStatus(406);
+            JSONObject reply = new JSONObject();
+            reply.put("status", "fail");
+            reply.put("message", "bad token");
+            printWriter.print(reply);
+            return;
+        }
+        String username = tokenServices.queryUserByToken(token).getUsername();
+        if(!jsonParam.containsKey("directory") || !jsonParam.containsKey("json")) {
+            response.setStatus(406);
+            JSONObject reply = new JSONObject();
+            reply.put("status", "fail");
+            reply.put("message", "bad request");
+            printWriter.print(reply);
+            return;
+        }
+
+        System.out.printf("update %s%n", jsonParam);
+
+        favouriteServices.updateDirectory(username, jsonParam.getString("directory"), jsonParam.getJSONArray("json"));
+        JSONObject reply = new JSONObject();
+        reply.put("status", "ok");
+        printWriter.print(reply);
+    }
+
+    @PostMapping("/moveDirectory")
+    public void moveDirectory(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
+        response.setHeader("Content-type", "application/json;charset=UTF-8");
+        PrintWriter printWriter = response.getWriter();
+        String token = jsonParam.getString("token");
+        if(!tokenServices.isTokenValid(token)) {
+            response.setStatus(406);
+            JSONObject reply = new JSONObject();
+            reply.put("status", "fail");
+            reply.put("message", "bad token");
+            printWriter.print(reply);
+            return;
+        }
+        String username = tokenServices.queryUserByToken(token).getUsername();
+        if(!jsonParam.containsKey("directory") || !jsonParam.containsKey("json")) {
+            response.setStatus(406);
+            JSONObject reply = new JSONObject();
+            reply.put("status", "fail");
+            reply.put("message", "bad request");
+            printWriter.print(reply);
+            return;
+        }
+
+        System.out.printf("move %s%n", jsonParam);
+
+        favouriteServices.moveDirectory(username, jsonParam.getString("directory"), jsonParam.getJSONArray("json"));
         JSONObject reply = new JSONObject();
         reply.put("status", "ok");
         printWriter.print(reply);

@@ -10,7 +10,9 @@ import com.java.cuiyikai.androidbackend.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class FavouriteServices {
@@ -28,33 +30,78 @@ public class FavouriteServices {
         favouriteMapper.addNewUserFavourite(user.getId(), jsonObject.toJSONString());
     }
 
-    public boolean checkFavouriteExist(String username) {
-        return favouriteMapper.getFavouriteByUsername(username) != null;
-    }
-
-    public void updateFavourite(String username, String key, JSONObject value) {
+    public void updateFavourite(String username, JSONObject value) {
         Favourite favourite = favouriteMapper.getFavouriteByUsername(username);
         JSONObject favouriteJson = JSON.parseObject(favourite.getJson());
-        JSONArray array = favouriteJson.getJSONArray(key);
-        if(array == null)
-            array = new JSONArray();
-        array.add(value);
-        favouriteJson.put(key, array);
+        Set<String> directorySet = new HashSet<>();
+        JSONArray directoryArray = value.getJSONArray("checked");
+        for(Object directoryNames : directoryArray)
+            directorySet.add((String) directoryNames);
+        for(Map.Entry<String, Object> entry : favouriteJson.entrySet()) {
+            JSONArray array = JSON.parseArray(entry.getValue().toString());
+            int flag = -1;
+            for(Object obj:array) {
+                JSONObject object = JSON.parseObject(obj.toString());
+                if(object.getString("name").equals(value.getString("name"))) {
+                    flag = array.indexOf(obj);
+                    break;
+                }
+            }
+            if(directorySet.contains(entry.getKey()) && flag == -1) {
+                JSONObject object = new JSONObject();
+                object.put("name", value.getString("name"));
+                object.put("subject", value.getString("subject"));
+                array.add(object);
+                favouriteJson.replace(entry.getKey(), array);
+            } else if(!directorySet.contains(entry.getKey()) && flag != -1) {
+                array.remove(flag);
+                favouriteJson.replace(entry.getKey(), array);
+            }
+        }
         favouriteMapper.updateUserFavourite(userMapper.queryUserByUsername(username).getId(), favouriteJson.toJSONString());
     }
 
-    public void removeFromFavourite(String username, JSONObject value, String key) {
+    public void removeDirectory(String username, String directoryName) {
         Favourite favourite = favouriteMapper.getFavouriteByUsername(username);
         JSONObject favouriteJson = JSON.parseObject(favourite.getJson());
-        JSONArray array = favouriteJson.getJSONArray(key);
-        for (Object obj : array) {
-            JSONObject jsonObject = JSON.parseObject(obj.toString());
-            if(value.getString("subject").equals(jsonObject.getString("subject")) && value.getString("name").equals(jsonObject.getString("name"))) {
-                array.remove(obj);
-                favouriteJson.replace(key, array);
-                break;
-            }
-        }
+        favouriteJson.remove(directoryName);
+        favouriteMapper.updateUserFavourite(userMapper.queryUserByUsername(username).getId(), favouriteJson.toJSONString());
+    }
+
+    public boolean addDirectory(String username, String directoryName) {
+        Favourite favourite = favouriteMapper.getFavouriteByUsername(username);
+        JSONObject favouriteJson = JSON.parseObject(favourite.getJson());
+        if(favouriteJson.containsKey(directoryName))
+            return false;
+        favouriteJson.put(directoryName, new JSONArray());
+        favouriteMapper.updateUserFavourite(userMapper.queryUserByUsername(username).getId(), favouriteJson.toJSONString());
+        return true;
+    }
+
+    public void updateDirectory(String username, String directoryName, JSONArray jsonArray) {
+        Favourite favourite = favouriteMapper.getFavouriteByUsername(username);
+        JSONObject favouriteJson = JSON.parseObject(favourite.getJson());
+        if(!favouriteJson.containsKey(directoryName))
+            return;
+        favouriteJson.replace(directoryName, jsonArray);
+        System.out.println(favouriteJson);
+        favouriteMapper.updateUserFavourite(userMapper.queryUserByUsername(username).getId(), favouriteJson.toJSONString());
+    }
+
+    public void moveDirectory(String username, String directoryName, JSONArray jsonArray) {
+        Favourite favourite = favouriteMapper.getFavouriteByUsername(username);
+        JSONObject favouriteJson = JSON.parseObject(favourite.getJson());
+        if(!favouriteJson.containsKey(directoryName))
+            return;
+        Set<String> contains = new HashSet<>();
+        JSONArray array = favouriteJson.getJSONArray(directoryName);
+        for(Object obj : array)
+            contains.add(JSON.parseObject(obj.toString()).getString("name"));
+        for(Object obj : jsonArray)
+            if(!contains.contains(JSON.parseObject(obj.toString()).getString("name")))
+                array.add(obj);
+        favouriteJson.replace(directoryName, array);
+        System.out.println(favouriteJson);
         favouriteMapper.updateUserFavourite(userMapper.queryUserByUsername(username).getId(), favouriteJson.toJSONString());
     }
 

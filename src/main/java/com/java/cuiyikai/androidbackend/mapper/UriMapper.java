@@ -10,10 +10,10 @@ import java.util.List;
 @Mapper
 public interface UriMapper {
 
-    @Select("SELECT * FROM uris ORDER BY random() LIMIT 20")
+    @Select("SELECT * FROM uris ORDER BY random() LIMIT 1")
     List<Uri> getRandomUriList();
 
-    @Select("SELECT * FROM uris WHERE subject = #{subject} ORDER BY random() LIMIT 20")
+    @Select("SELECT * FROM uris WHERE subject = #{subject} ORDER BY random() LIMIT 1")
     List<Uri> getRandomUriListBySubject(String subject);
 
     @Insert("INSERT INTO uris (subject, uri) VALUES (#{subject}, #{uri})")

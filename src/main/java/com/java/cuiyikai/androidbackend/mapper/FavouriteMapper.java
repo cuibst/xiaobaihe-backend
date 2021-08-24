@@ -9,12 +9,12 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface FavouriteMapper {
 
-    @Insert("INSERT INTO favourite (user_id, JSON) VALUES (#{user_id}, #{content})")
+    @Insert("INSERT INTO favourite (user_id, json) VALUES (#{user_id}, #{content})")
     int addNewUserFavourite(int user_id, String content);
 
-    @Update("UPDATE favourite json = #{favouriteJson} WHERE user_id = #{user_id}")
+    @Update("UPDATE favourite SET json = #{favouriteJson} WHERE user_id = #{user_id}")
     int updateUserFavourite(int user_id, String favouriteJson);
 
-    @Select("SELECT FROM favourite WHERE user_id in (SELECT id FROM username WHERE username = #{username} LIMIT 1)")
+    @Select("SELECT * FROM favourite WHERE user_id in (SELECT id FROM username WHERE username = #{username} LIMIT 1)")
     Favourite getFavouriteByUsername(String username);
 }

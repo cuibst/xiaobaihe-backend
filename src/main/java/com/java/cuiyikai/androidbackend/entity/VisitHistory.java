@@ -2,14 +2,16 @@ package com.java.cuiyikai.androidbackend.entity;
 
 import java.sql.Date;
 
-public class History {
+public class VisitHistory {
     private int id;
 
-    private String content;
+    private String name;
 
     private int user_id;
 
     private Date time;
+
+    private String subject;
 
     public int getId() {
         return id;
@@ -19,12 +21,12 @@ public class History {
         this.id = id;
     }
 
-    public String getContent() {
-        return content;
+    public String getName() {
+        return name;
     }
 
-    public void setContent(String content) {
-        this.content = content;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public int getUser_id() {
@@ -41,5 +43,13 @@ public class History {
 
     public void setTime(Date time) {
         this.time = time;
+    }
+
+    public String getSubject() {
+        return subject;
+    }
+
+    public void setSubject(String subject) {
+        this.subject = subject;
     }
 }
