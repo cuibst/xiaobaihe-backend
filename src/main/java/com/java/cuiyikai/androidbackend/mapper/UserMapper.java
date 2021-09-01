@@ -17,4 +17,7 @@ public interface UserMapper {
 
     @Update("UPDATE username SET checked = true WHERE username = #{username}")
     int updateChekcedEmailStatus(String username);
+
+    @Update("UPDATE username SET password = #{password}, email = #{email}, checked = #{checked} WHERE id = #{userId}")
+    int updateUserInfo(String password, String email, boolean checked, int userId);
 }

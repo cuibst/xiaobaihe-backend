@@ -30,4 +30,8 @@ public class UserServices {
     public void updateCheckEmailStatus(String username) {
         userMapper.updateChekcedEmailStatus(username);
     }
+
+    public void updateUserInfo(User user, boolean changedEmail) {
+        userMapper.updateUserInfo(user.getPassword(), user.getEmail(), !changedEmail, user.getId());
+    }
 }

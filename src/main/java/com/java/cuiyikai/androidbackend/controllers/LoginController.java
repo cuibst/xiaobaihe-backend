@@ -59,7 +59,7 @@ public class LoginController {
             response.setStatus(406);
             logger.info("Login failed with username:{}", username);
             reply.put("status", "fail");
-            reply.put("message", "password or username incorrect");
+            reply.put("message", "password or username incorrect or email not checked");
         }
         printWriter.print(reply);
     }

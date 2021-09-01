@@ -1,6 +1,6 @@
 package com.java.cuiyikai.androidbackend.entity;
 
-import java.sql.Date;
+import java.util.Date;
 
 public class VisitHistory {
     private int id;

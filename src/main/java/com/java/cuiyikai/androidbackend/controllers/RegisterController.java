@@ -19,7 +19,7 @@ import java.util.Date;
 @RequestMapping("/api/register")
 public class RegisterController {
 
-    private final static String BACKEND_ADDRESS = "http://183.172.176.163:8080/api/register/check?token=";
+    private final static String BACKEND_ADDRESS = "http://183.172.183.37:8080/api/register/check?token=";
 
     @Autowired
     private UserServices userServices;

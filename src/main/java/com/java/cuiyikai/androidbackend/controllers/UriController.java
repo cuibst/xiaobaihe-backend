@@ -3,10 +3,10 @@ package com.java.cuiyikai.androidbackend.controllers;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.java.cuiyikai.androidbackend.entity.SearchHistory;
-import com.java.cuiyikai.androidbackend.entity.Uri;
-import com.java.cuiyikai.androidbackend.entity.User;
-import com.java.cuiyikai.androidbackend.entity.VisitHistory;
+import com.java.cuiyikai.androidbackend.callables.NameCallable;
+import com.java.cuiyikai.androidbackend.callables.RelatedCallable;
+import com.java.cuiyikai.androidbackend.callables.SearchResultCallable;
+import com.java.cuiyikai.androidbackend.entity.*;
 import com.java.cuiyikai.androidbackend.services.HistoryServices;
 import com.java.cuiyikai.androidbackend.services.TokenServices;
 import com.java.cuiyikai.androidbackend.services.UriServices;
@@ -21,6 +21,12 @@ import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+import static com.java.cuiyikai.androidbackend.utilities.NetworkUtilityClass.buildForm;
+import static com.java.cuiyikai.androidbackend.utilities.NetworkUtilityClass.setConnectionHeader;
 
 @Controller
 @RequestMapping("/api/uri")
@@ -35,39 +41,9 @@ public class UriController {
     @Autowired
     TokenServices tokenServices;
 
+    private static final ExecutorService executorService = Executors.newCachedThreadPool();
+
     Logger logger = LoggerFactory.getLogger(UriController.class);
-
-    public static void setConnectionHeader(HttpURLConnection connection, String method) throws ProtocolException {
-        System.out.printf("Set connection method : %s%n", method);
-        connection.setRequestMethod(method);
-        connection.setConnectTimeout(5000);
-        connection.setReadTimeout(10000);
-        if(method.equals("POST")) {
-            connection.setRequestProperty("Accept", "*/*");
-            connection.setRequestProperty("Accept-Language", "zh-CN");
-            connection.setDoOutput(true);
-            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-        }
-        connection.setDoInput(true);
-    }
-
-    public static String buildForm(Map<String,String> form) {
-        if(form.size() == 0)
-            return "";
-        StringBuilder builder = new StringBuilder();
-        form.forEach((key, value) -> {
-            try {
-                builder.append(URLEncoder.encode(key, "UTF-8"));
-                builder.append('=');
-                builder.append(URLEncoder.encode(value, "UTF-8"));
-                builder.append('&');
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-        builder.deleteCharAt(builder.length()-1);
-        return builder.toString();
-    }
 
     @PostMapping("/add")
     public void addUri(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
@@ -82,94 +58,6 @@ public class UriController {
         printWriter.print(reply);
     }
 
-    private JSONObject getUriName(Uri uri, String id) throws Exception{
-        JSONObject uriName = new JSONObject();
-        URL url = new URL("http://open.edukg.cn/opedukg/api/typeOpen/open/getKnowledgeCard");
-        HttpURLConnection cardConnection = (HttpURLConnection) url.openConnection();
-        setConnectionHeader(cardConnection, "POST");
-        Map<String, String> args = new HashMap<>();
-        args.put("id", id);
-        args.put("uri", uri.getUri());
-        args.put("course", uri.getSubject());
-        logger.info(url.toString());
-        logger.info("{} {} {}", id, uri.getUri(), uri.getSubject());
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(cardConnection.getOutputStream(), StandardCharsets.UTF_8));
-        writer.write(buildForm(args));
-        writer.flush();
-        if(cardConnection.getResponseCode() == 200)
-        {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(cardConnection.getInputStream(), StandardCharsets.UTF_8));
-            String line;
-            StringBuilder buffer = new StringBuilder();
-            while((line = reader.readLine()) != null) {
-                buffer.append(line);
-            }
-            JSONObject cardResponse = JSON.parseObject(buffer.toString());
-            JSONObject data = cardResponse.getJSONObject("data");
-            if(data.getString("entity_name") == null)
-                return null;
-            uriName.put("name", data.getString("entity_name"));
-            uriName.put("subject", uri.getSubject());
-            reader.close();
-        }
-        else
-            return null;
-        writer.close();
-        cardConnection.disconnect();
-        return uriName;
-    }
-
-    private JSONArray getSearchResult(Map<String, String> args) throws Exception{
-        URL url = new URL("http://open.edukg.cn/opedukg/api/typeOpen/open/instanceList?" + buildForm(args));
-        HttpURLConnection cardConnection = (HttpURLConnection) url.openConnection();
-        setConnectionHeader(cardConnection, "GET");
-        logger.info(url.toString());
-        JSONArray result;
-        if(cardConnection.getResponseCode() == 200)
-        {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(cardConnection.getInputStream(), StandardCharsets.UTF_8));
-            String line;
-            StringBuilder buffer = new StringBuilder();
-            while((line = reader.readLine()) != null) {
-                buffer.append(line);
-            }
-            JSONObject cardResponse = JSON.parseObject(buffer.toString());
-            result = cardResponse.getJSONArray("data");
-        }
-        else
-            return null;
-        cardConnection.disconnect();
-        return result;
-    }
-
-    private JSONArray getRelate(Map<String, String> args) throws Exception{
-        URL url = new URL("http://open.edukg.cn/opedukg/api/typeOpen/open/relatedsubject");
-        HttpURLConnection cardConnection = (HttpURLConnection) url.openConnection();
-        setConnectionHeader(cardConnection, "POST");
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(cardConnection.getOutputStream(), StandardCharsets.UTF_8));
-        writer.write(buildForm(args));
-        logger.info(url.toString());
-        logger.info(buildForm(args));
-        writer.flush();
-        JSONArray result;
-        if(cardConnection.getResponseCode() == 200)
-        {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(cardConnection.getInputStream(), StandardCharsets.UTF_8));
-            String line;
-            StringBuilder buffer = new StringBuilder();
-            while((line = reader.readLine()) != null) {
-                buffer.append(line);
-            }
-            JSONObject cardResponse = JSON.parseObject(buffer.toString());
-            result = cardResponse.getJSONArray("data");
-        }
-        else
-            return null;
-        writer.close();
-        cardConnection.disconnect();
-        return result;
-    }
-
     final String[] SUBJECTS = {"chinese", "english", "math", "physics", "chemistry", "biology", "history", "geo", "politics"};
 
     @GetMapping("/getname")
@@ -182,8 +70,12 @@ public class UriController {
         HttpURLConnection loginConnection = (HttpURLConnection) url.openConnection();
         setConnectionHeader(loginConnection, "POST");
         Map<String, String> args = new HashMap<>();
-        args.put("phone", "16688092093");
-        args.put("password", "0730llhh");
+//        args.put("phone", "15910826331");
+//        args.put("password", "cbst20001117");
+//        args.put("phone", "16688092093");
+//        args.put("password", "0730llhh");
+        args.put("phone", "18211517925");
+        args.put("password", "ldx0881110103");
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(loginConnection.getOutputStream(), StandardCharsets.UTF_8));
         writer.write(buildForm(args));
         writer.flush();
@@ -217,15 +109,24 @@ public class UriController {
                 User user = tokenServices.queryUserByToken(token);
                 List<VisitHistory> visitHistoryList = historyServices.getLatestVisitHistoryByUserId(user.getId());
                 List<SearchHistory> searchHistoryList = historyServices.getLatestHistoryByUsername(user.getUsername());
-//                JSONArray objectList = new JSONArray();
                 Map<JSONObject, Integer> results = new HashMap<>();
-                for(SearchHistory searchHistory : searchHistoryList) {
-                    for(String sub : SUBJECTS) {
-                        args = new HashMap<>();
-                        args.put("id", id);
-                        args.put("course", sub);
-                        args.put("searchKey", searchHistory.getContent());
-                        JSONArray data = getSearchResult(args);
+                for(String sub : SUBJECTS) {
+                    List<Future<JSONArray>> futureSearchResultList = new ArrayList<>();
+                    for(SearchHistory searchHistory : searchHistoryList) {
+                        Map<String,String> args1 = new HashMap<>();
+                        args1.put("id", id);
+                        args1.put("course", sub);
+                        args1.put("searchKey", searchHistory.getContent());
+                        futureSearchResultList.add(executorService.submit(new SearchResultCallable(args1)));
+                    }
+                    for(Future<JSONArray> futureData : futureSearchResultList) {
+                        JSONArray data;
+                        try {
+                            data = futureData.get();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            continue;
+                        }
                         if(data != null) {
                             logger.info(data.toString());
                             for (Object obj : data) {
@@ -241,14 +142,27 @@ public class UriController {
                         }
                     }
                 }
+
+                List<Future<JSONArray>> futureRelateList = new ArrayList<>();
+
                 for(VisitHistory visitHistory : visitHistoryList) {
-                    args = new HashMap<>();
-                    args.put("id", id);
-                    args.put("course", visitHistory.getSubject());
-                    args.put("subjectName", visitHistory.getName());
-                    JSONArray result = getRelate(args);
+                    Map<String, String> args1 = new HashMap<>();
+                    args1.put("id", id);
+                    args1.put("course", visitHistory.getSubject());
+                    args1.put("subjectName", visitHistory.getName());
+                    futureRelateList.add(executorService.submit(new RelatedCallable(args1)));
+                }
+
+                for(int i=0;i<futureRelateList.size();i++) {
+                    JSONArray result;
+                    try {
+                        result = futureRelateList.get(i).get();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        continue;
+                    }
+                    VisitHistory visitHistory = visitHistoryList.get(i);
                     if(result != null) {
-                        logger.info(result.toString());
                         for (Object obj : result) {
                             JSONObject entity = JSON.parseObject(obj.toString());
                             JSONObject resultObject = new JSONObject();
@@ -261,6 +175,8 @@ public class UriController {
                         }
                     }
                 }
+
+                logger.info(results.toString());
 
                 List<Map.Entry<JSONObject, Integer>> entryList = new ArrayList<>(results.entrySet());
                 entryList.sort(Map.Entry.comparingByValue());
@@ -283,11 +199,22 @@ public class UriController {
         JSONObject reply = new JSONObject();
         reply.put("status", "ok");
         JSONArray uriNames = new JSONArray();
+        List<Future<JSONObject>> futureUris = new ArrayList<>();
         for (Uri uri : uriList) {
-            JSONObject uriName = getUriName(uri, id);
-            if(uriName != null)
-                uriNames.add(uriName);
+            futureUris.add(executorService.submit(new NameCallable(uri, uriServices, id)));
         }
+        for(Future<JSONObject> futureUri : futureUris) {
+            JSONObject object;
+            try {
+                object = futureUri.get();
+            } catch (Exception e) {
+                e.printStackTrace();
+                continue;
+            }
+            if(object != null)
+                uriNames.add(object);
+        }
+        logger.info(uriNames.toString());
         reply.put("data", uriNames);
         printWriter.print(reply);
     }

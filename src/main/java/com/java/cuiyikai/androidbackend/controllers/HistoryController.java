@@ -86,6 +86,38 @@ public class HistoryController {
         printWriter.print(reply);
     }
 
+    @GetMapping("/removeHistory")
+    public void removeHistory(@RequestParam("token") String token, @RequestParam(value = "content", required = false, defaultValue = "") String content,
+                              @RequestParam(value = "all", required = false, defaultValue = "false") boolean allFLag, HttpServletResponse response) throws IOException {
+        response.setHeader("Content-type", "application/json;charset=UTF-8");
+        PrintWriter printWriter = response.getWriter();
+        if(content.equals("") && !allFLag) {
+            response.setStatus(406);
+            JSONObject reply = new JSONObject();
+            reply.put("status", "fail");
+            reply.put("message", "bad request");
+            printWriter.print(reply);
+            return;
+        }
+        if(!tokenServices.isTokenValid(token)) {
+            response.setStatus(406);
+            JSONObject reply = new JSONObject();
+            reply.put("status", "fail");
+            reply.put("message", "bad token");
+            printWriter.print(reply);
+            return;
+        }
+        User user = tokenServices.queryUserByToken(token);
+        if(allFLag) {
+            historyServices.deleteAllUserHistory(user.getId());
+        } else {
+            historyServices.deleteSingleUserHistory(user.getId(), content);
+        }
+        JSONObject reply = new JSONObject();
+        reply.put("status", "ok");
+        printWriter.print(reply);
+    }
+
     @GetMapping("/getVisitHistory")
     public void getVisitHistory(@RequestParam("token") String token, HttpServletResponse response) throws IOException {
         response.setHeader("Content-type", "application/json;charset=UTF-8");
@@ -105,6 +137,7 @@ public class HistoryController {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("name", visitHistory.getName());
             jsonObject.put("subject", visitHistory.getSubject());
+            jsonObject.put("time", visitHistory.getTime());
             result.add(jsonObject);
         }
         JSONObject reply = new JSONObject();
@@ -128,6 +161,26 @@ public class HistoryController {
         }
         int userId = tokenServices.queryUserByToken(token).getId();
         historyServices.addVisitHistory(userId, name, subject);
+        JSONObject reply = new JSONObject();
+        reply.put("status", "ok");
+        printWriter.print(reply);
+    }
+
+    @GetMapping("/removeVisitHistory")
+    public void removeVisitHistory(@RequestParam("token") String token, @RequestParam("name") String name, @RequestParam("subject") String subject, HttpServletResponse response) throws IOException {
+        response.setHeader("Content-type", "application/json;charset=UTF-8");
+        PrintWriter printWriter = response.getWriter();
+        if(!tokenServices.isTokenValid(token)) {
+            response.setStatus(406);
+            JSONObject reply = new JSONObject();
+            reply.put("status", "fail");
+            reply.put("message", "bad token");
+            printWriter.print(reply);
+            return;
+        }
+        User user = tokenServices.queryUserByToken(token);
+        System.out.printf("%d %s %s%n", user.getId(), name, subject);
+        historyServices.deleteSingleVisitHistory(user.getId(), name, subject);
         JSONObject reply = new JSONObject();
         reply.put("status", "ok");
         printWriter.print(reply);
