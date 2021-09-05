@@ -58,8 +58,6 @@ public class UriController {
         printWriter.print(reply);
     }
 
-    final String[] SUBJECTS = {"chinese", "english", "math", "physics", "chemistry", "biology", "history", "geo", "politics"};
-
     @GetMapping("/getname")
     public void getName(@RequestParam(name = "subject", required = false, defaultValue = "") String subject, @RequestParam(name = "token", required = false, defaultValue = "") String token, @RequestParam(name = "offset", required = false, defaultValue = "0") int offset, HttpServletResponse response) throws Exception {
         response.setHeader("Content-type", "application/json;charset=UTF-8");
@@ -110,35 +108,37 @@ public class UriController {
                 List<VisitHistory> visitHistoryList = historyServices.getLatestVisitHistoryByUserId(user.getId());
                 List<SearchHistory> searchHistoryList = historyServices.getLatestHistoryByUsername(user.getUsername());
                 Map<JSONObject, Integer> results = new HashMap<>();
-                for(String sub : SUBJECTS) {
-                    List<Future<JSONArray>> futureSearchResultList = new ArrayList<>();
-                    for(SearchHistory searchHistory : searchHistoryList) {
-                        Map<String,String> args1 = new HashMap<>();
-                        args1.put("id", id);
-                        args1.put("course", sub);
-                        args1.put("searchKey", searchHistory.getContent());
-                        futureSearchResultList.add(executorService.submit(new SearchResultCallable(args1)));
+                List<Future<JSONArray>> futureSearchResultList = new ArrayList<>();
+                List<String> subjects = new ArrayList<>();
+                for(SearchHistory searchHistory : searchHistoryList) {
+                    Map<String,String> args1 = new HashMap<>();
+                    args1.put("id", id);
+                    args1.put("course", searchHistory.getSubject());
+                    args1.put("searchKey", searchHistory.getContent());
+                    futureSearchResultList.add(executorService.submit(new SearchResultCallable(args1)));
+                    subjects.add(searchHistory.getSubject());
+                }
+                for(int i=0;i<futureSearchResultList.size();i++) {
+                    Future<JSONArray> futureData = futureSearchResultList.get(i);
+                    String sub = subjects.get(i);
+                    JSONArray data;
+                    try {
+                        data = futureData.get();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        continue;
                     }
-                    for(Future<JSONArray> futureData : futureSearchResultList) {
-                        JSONArray data;
-                        try {
-                            data = futureData.get();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            continue;
-                        }
-                        if(data != null) {
-                            logger.info(data.toString());
-                            for (Object obj : data) {
-                                JSONObject entity = JSON.parseObject(obj.toString());
-                                JSONObject resultObject = new JSONObject();
-                                resultObject.put("name", entity.getString("label"));
-                                resultObject.put("subject", sub);
-                                if(results.containsKey(resultObject))
-                                    results.replace(resultObject, results.get(resultObject) + 1);
-                                else
-                                    results.put(resultObject, 1);
-                            }
+                    if(data != null) {
+                        logger.info(data.toString());
+                        for (Object obj : data) {
+                            JSONObject entity = JSON.parseObject(obj.toString());
+                            JSONObject resultObject = new JSONObject();
+                            resultObject.put("name", entity.getString("label"));
+                            resultObject.put("subject", sub);
+                            if(results.containsKey(resultObject))
+                                results.replace(resultObject, results.get(resultObject) + 1);
+                            else
+                                results.put(resultObject, 1);
                         }
                     }
                 }

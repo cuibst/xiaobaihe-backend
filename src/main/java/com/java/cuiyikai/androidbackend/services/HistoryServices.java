@@ -23,21 +23,23 @@ public class HistoryServices {
         return historyMapper.queryLatestHistoryByUsername(username);
     }
 
-    public void addHistory(String username, String content) {
+    public void addHistory(String username, String content, String subject) {
         User user = userMapper.queryUserByUsername(username);
-        if(historyMapper.getMatchHistoryCount(user.getId(), content) > 0) {
-            historyMapper.updateOldHistory(user.getId(), content);
+        System.out.printf("Get count: %s %d%n", content, historyMapper.getMatchHistoryCount(user.getId(), content, subject));
+        if(historyMapper.getMatchHistoryCount(user.getId(), content, subject) > 0) {
+            historyMapper.updateOldHistory(user.getId(), content, subject);
             return;
         }
-        historyMapper.addHistory(userMapper.queryUserByUsername(username).getId(), content);
+        System.out.println("add new history");
+        historyMapper.addHistory(userMapper.queryUserByUsername(username).getId(), content, subject);
     }
 
     public void deleteAllUserHistory(int userId) {
         historyMapper.deleteAllUserHistory(userId);
     }
 
-    public void deleteSingleUserHistory(int userId, String content) {
-        historyMapper.deleteSingleHistory(userId, content);
+    public void deleteSingleUserHistory(int userId, String content, String subject) {
+        historyMapper.deleteSingleHistory(userId, content, subject);
     }
 
     public List<VisitHistory> getVisitHistoryByUserId(int id) {

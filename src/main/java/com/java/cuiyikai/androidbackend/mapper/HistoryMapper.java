@@ -11,23 +11,20 @@ public interface HistoryMapper {
     @Select("SELECT * FROM search_history WHERE user_id IN (SELECT id FROM username WHERE username = #{username}) ORDER BY time DESC LIMIT 10")
     List<SearchHistory> queryLatestHistoryByUsername(String username);
 
-    @Select("SELECT * FROM search_history WHERE user_id = #{userId} ORDER BY time DESC LIMIT 10")
-    List<SearchHistory> queryLatestHistoryByUserId(int userId);
+    @Select("SELECT COUNT(1) FROM search_history WHERE user_id = #{userId} and content = #{content} and subject = #{subject}")
+    int getMatchHistoryCount(int userId, String content, String subject);
 
-    @Select("SELECT COUNT(1) FROM search_history WHERE user_id = #{userId} and content = #{content}")
-    int getMatchHistoryCount(int userId, String content);
-
-    @Update("UPDATE search_history SET time = NOW() WHERE user_id = #{userId} and content = #{content}")
-    void updateOldHistory(int userId, String content);
+    @Update("UPDATE search_history SET time = NOW() WHERE user_id = #{userId} and content = #{content} and subject = #{subject}")
+    void updateOldHistory(int userId, String content, String subject);
 
     @Delete("DELETE FROM search_history WHERE user_id = #{userId}")
     void deleteAllUserHistory(int userId);
 
-    @Delete("DELETE FROM search_history WHERE user_id = #{userId} and content = #{content}")
-    void deleteSingleHistory(int userId, String content);
+    @Delete("DELETE FROM search_history WHERE user_id = #{userId} and content = #{content} and subject = #{subject}")
+    void deleteSingleHistory(int userId, String content, String subject);
 
-    @Insert("INSERT INTO search_history (user_id, content, time) values (#{userId}, #{content}, NOW())")
-    void addHistory(int userId, String content);
+    @Insert("INSERT INTO search_history (user_id, content, subject, time) values (#{userId}, #{content}, #{subject}, NOW())")
+    void addHistory(int userId, String content, String subject);
 
     @Select("SELECT * FROM visit_history WHERE user_id IN (SELECT id FROM username WHERE username = #{username}) ORDER BY time DESC")
     List<VisitHistory> queryVisitHistoryByUsername(String username);

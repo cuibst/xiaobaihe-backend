@@ -11,6 +11,8 @@ public class SearchHistory {
 
     private Date time;
 
+    private String subject;
+
     public int getId() {
         return id;
     }
@@ -41,5 +43,13 @@ public class SearchHistory {
 
     public void setTime(Date time) {
         this.time = time;
+    }
+
+    public String getSubject() {
+        return subject;
+    }
+
+    public void setSubject(String subject) {
+        this.subject = subject;
     }
 }

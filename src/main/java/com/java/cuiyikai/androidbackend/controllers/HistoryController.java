@@ -56,9 +56,12 @@ public class HistoryController {
         }
         String username = tokenServices.queryUserByToken(token).getUsername();
         List<SearchHistory> searchHistoryList = historyServices.getLatestHistoryByUsername(username);
-        ArrayList<String> result = new ArrayList<>();
+        ArrayList<JSONObject> result = new ArrayList<>();
         for (SearchHistory searchHistory : searchHistoryList) {
-            result.add(searchHistory.getContent());
+            JSONObject object = new JSONObject();
+            object.put("content", searchHistory.getContent());
+            object.put("subject", searchHistory.getSubject());
+            result.add(object);
         }
         JSONObject reply = new JSONObject();
         reply.put("status", "ok");
@@ -68,7 +71,8 @@ public class HistoryController {
     }
 
     @GetMapping("/addHistory")
-    public void addHistory(@RequestParam("token") String token, @RequestParam("content") String content, HttpServletResponse response) throws IOException {
+    public void addHistory(@RequestParam("token") String token, @RequestParam("content") String content, @RequestParam("subject") String subject, HttpServletResponse response) throws IOException {
+        logger.info("token = {}, content = {}", token, content);
         response.setHeader("Content-type", "application/json;charset=UTF-8");
         PrintWriter printWriter = response.getWriter();
         if(!tokenServices.isTokenValid(token)) {
@@ -80,14 +84,14 @@ public class HistoryController {
             return;
         }
         String username = tokenServices.queryUserByToken(token).getUsername();
-        historyServices.addHistory(username, content);
+        historyServices.addHistory(username, content, subject);
         JSONObject reply = new JSONObject();
         reply.put("status", "ok");
         printWriter.print(reply);
     }
 
     @GetMapping("/removeHistory")
-    public void removeHistory(@RequestParam("token") String token, @RequestParam(value = "content", required = false, defaultValue = "") String content,
+    public void removeHistory(@RequestParam("token") String token, @RequestParam(value = "content", required = false, defaultValue = "") String content, @RequestParam(value = "subject", required = false, defaultValue = "") String subject,
                               @RequestParam(value = "all", required = false, defaultValue = "false") boolean allFLag, HttpServletResponse response) throws IOException {
         response.setHeader("Content-type", "application/json;charset=UTF-8");
         PrintWriter printWriter = response.getWriter();
@@ -111,7 +115,7 @@ public class HistoryController {
         if(allFLag) {
             historyServices.deleteAllUserHistory(user.getId());
         } else {
-            historyServices.deleteSingleUserHistory(user.getId(), content);
+            historyServices.deleteSingleUserHistory(user.getId(), content, subject);
         }
         JSONObject reply = new JSONObject();
         reply.put("status", "ok");

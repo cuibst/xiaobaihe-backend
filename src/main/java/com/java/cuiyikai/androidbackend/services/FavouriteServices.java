@@ -84,7 +84,7 @@ public class FavouriteServices {
         if(!favouriteJson.containsKey(directoryName))
             return;
         favouriteJson.replace(directoryName, jsonArray);
-        System.out.println(favouriteJson);
+        System.out.printf("update %s%n", favouriteJson);
         favouriteMapper.updateUserFavourite(userMapper.queryUserByUsername(username).getId(), favouriteJson.toJSONString());
     }
 
@@ -101,7 +101,7 @@ public class FavouriteServices {
             if(!contains.contains(JSON.parseObject(obj.toString()).getString("name")))
                 array.add(obj);
         favouriteJson.replace(directoryName, array);
-        System.out.println(favouriteJson);
+        System.out.printf("move %s%n", favouriteJson);
         favouriteMapper.updateUserFavourite(userMapper.queryUserByUsername(username).getId(), favouriteJson.toJSONString());
     }
 

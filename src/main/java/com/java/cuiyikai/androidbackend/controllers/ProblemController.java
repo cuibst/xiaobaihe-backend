@@ -18,9 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.HttpURLConnection;
-import java.net.ProtocolException;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -93,45 +91,56 @@ public class ProblemController {
         User user = tokenServices.queryUserByToken(token);
         List<VisitHistory> visitHistoryList = historyServices.getLatestVisitHistoryByUserId(user.getId());
         List<SearchHistory> searchHistoryList = historyServices.getLatestHistoryByUsername(user.getUsername());
+        if(searchHistoryList.size() > 5)
+            searchHistoryList = searchHistoryList.subList(0,5);
         List<Future<JSONArray>> futureProblems = new ArrayList<>();
         Map<JSONObject, Integer> results = new HashMap<>();
-        for(String sub : SUBJECTS) {
-            List<Future<JSONArray>> futureSearchResultList = new ArrayList<>();
-            for(SearchHistory searchHistory : searchHistoryList) {
-                Map<String,String> args1 = new HashMap<>();
-                args1.put("id", id);
-                args1.put("course", sub);
-                args1.put("searchKey", searchHistory.getContent());
-                futureSearchResultList.add(executorService.submit(new SearchResultCallable(args1)));
-            }
-            for(Future<JSONArray> futureData : futureSearchResultList) {
-                JSONArray data;
-                try {
-                    data = futureData.get();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    continue;
-                }
-                if(data != null) {
-                    for (Object obj : data) {
-                        JSONObject entity = JSON.parseObject(obj.toString());
-                        String name = entity.getString("label");
-                        Map<String, String> args1 = new HashMap<>();
-                        args1.put("id", id);
-                        args1.put("uriName", name);
-                        futureProblems.add(executorService.submit(new ProblemCallable(args1)));
-                    }
-                }
-            }
+        List<Future<JSONArray>> futureSearchResultList = new ArrayList<>();
+        List<String> subjects = new ArrayList<>();
+        List<String> problemSubjects = new ArrayList<>();
+        for(SearchHistory searchHistory : searchHistoryList) {
+            Map<String,String> args1 = new HashMap<>();
+            args1.put("id", id);
+            args1.put("course", searchHistory.getSubject());
+            args1.put("searchKey", searchHistory.getContent());
+            futureSearchResultList.add(executorService.submit(new SearchResultCallable(args1)));
+            subjects.add(searchHistory.getSubject());
         }
+
         for(VisitHistory visitHistory : visitHistoryList) {
             Map<String, String> args1 = new HashMap<>();
             args1.put("id", id);
             args1.put("uriName", visitHistory.getName());
             futureProblems.add(executorService.submit(new ProblemCallable(args1)));
+            problemSubjects.add(visitHistory.getSubject());
         }
 
-        for(Future<JSONArray> futureProblem : futureProblems) {
+        for(int i=0;i<futureSearchResultList.size();i++) {
+            if(futureProblems.size() >= 10)
+                break;
+            Future<JSONArray> futureData = futureSearchResultList.get(i);
+            JSONArray data;
+            try {
+                data = futureData.get();
+            } catch (Exception e) {
+                e.printStackTrace();
+                continue;
+            }
+            if(data != null) {
+                for (Object obj : data) {
+                    JSONObject entity = JSON.parseObject(obj.toString());
+                    String name = entity.getString("label");
+                    Map<String, String> args1 = new HashMap<>();
+                    args1.put("id", id);
+                    args1.put("uriName", name);
+                    futureProblems.add(executorService.submit(new ProblemCallable(args1)));
+                    problemSubjects.add(subjects.get(i));
+                }
+            }
+        }
+
+        for(int i=0;i<futureProblems.size();i++) {
+            Future<JSONArray> futureProblem = futureProblems.get(i);
             JSONArray problem;
             try {
                 problem = futureProblem.get();
@@ -139,13 +148,18 @@ public class ProblemController {
                 e.printStackTrace();
                 continue;
             }
-            for(Object object : problem) {
-                JSONObject jsonObject = JSON.parseObject(object.toString());
-                if(results.containsKey(jsonObject))
-                    results.replace(jsonObject, results.get(jsonObject) + 1);
-                else
-                    results.put(jsonObject, 1);
-            }
+            if(problem != null)
+                for(Object object : problem) {
+                    logger.info("Current Object: {}", object);
+                    JSONObject jsonObject = JSON.parseObject(object.toString());
+                    JSONObject object1 = new JSONObject();
+                    object1.put("subject", problemSubjects.get(i));
+                    object1.put("problem", jsonObject);
+                    if(results.containsKey(object1))
+                        results.replace(object1, results.get(object1) + 1);
+                    else
+                        results.put(object1, 1);
+                }
         }
 
         List<Map.Entry<JSONObject, Integer>> entryList = new ArrayList<>(results.entrySet());
@@ -160,14 +174,16 @@ public class ProblemController {
         JSONObject reply = new JSONObject();
         reply.put("status", "ok");
         reply.put("data", result);
+        logger.info("reply data : {}", result);
         printWriter.print(reply);
     }
 
     @PostMapping("/addNewSave")
     public void addNewSaveProblem(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
+        logger.info(jsonParam.toString());
         response.setHeader("Content-type", "application/json;charset=UTF-8");
         PrintWriter printWriter = response.getWriter();
-        if(!jsonParam.containsKey("token") || !jsonParam.containsKey("problem")) {
+        if(!jsonParam.containsKey("token") || !jsonParam.containsKey("problem") || !jsonParam.containsKey("subject")) {
             JSONObject reply = new JSONObject();
             response.setStatus(406);
             reply.put("status", "fail");
@@ -186,8 +202,6 @@ public class ProblemController {
             return;
         }
         String problem = jsonParam.getJSONObject("problem").toString();
-        if(!jsonParam.containsKey("subject"))
-            jsonParam.put("subject", "");
         int id = problemServices.insertNewProblem(problem, jsonParam.getString("subject")).getId();
         problemServices.addNewSave(user.getId(), id);
         JSONObject reply = new JSONObject();
@@ -212,8 +226,10 @@ public class ProblemController {
         JSONArray problemsArray = new JSONArray();
         for(Problem problem : problemList) {
             JSONObject jsonObject = JSON.parseObject(problem.getJson());
-            jsonObject.put("subject", problem.getSubject());
-            problemsArray.add(jsonObject);
+            JSONObject object = new JSONObject();
+            object.put("subject", problem.getSubject());
+            object.put("problem", jsonObject);
+            problemsArray.add(object);
         }
         JSONObject reply = new JSONObject();
         reply.put("status", "ok");
@@ -225,7 +241,7 @@ public class ProblemController {
     public void deleteSaveProblem(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
         response.setHeader("Content-type", "application/json;charset=UTF-8");
         PrintWriter printWriter = response.getWriter();
-        if(!jsonParam.containsKey("token") || !jsonParam.containsKey("problem")) {
+        if(!jsonParam.containsKey("token") || !jsonParam.containsKey("problem") || !jsonParam.containsKey("subject")) {
             JSONObject reply = new JSONObject();
             response.setStatus(406);
             reply.put("status", "fail");
@@ -245,7 +261,6 @@ public class ProblemController {
             return;
         }
         JSONObject problem = jsonParam.getJSONObject("problem");
-        problem.remove("subject");
         logger.info(problem.toString());
         problemServices.deleteSave(user.getId(), problem.toString());
         JSONObject reply = new JSONObject();

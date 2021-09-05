@@ -14,8 +14,8 @@ public class NetworkUtilityClass {
     public static void setConnectionHeader(HttpURLConnection connection, String method) throws ProtocolException {
         System.out.printf("Set connection method : %s%n", method);
         connection.setRequestMethod(method);
-        connection.setConnectTimeout(5000);
-        connection.setReadTimeout(10000);
+        connection.setConnectTimeout(2000);
+        connection.setReadTimeout(3000);
         if(method.equals("POST")) {
             connection.setRequestProperty("Accept", "*/*");
             connection.setRequestProperty("Accept-Language", "zh-CN");

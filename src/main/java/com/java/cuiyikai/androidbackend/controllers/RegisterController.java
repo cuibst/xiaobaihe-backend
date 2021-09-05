@@ -5,6 +5,8 @@ import com.java.cuiyikai.androidbackend.entity.Token;
 import com.java.cuiyikai.androidbackend.services.TokenServices;
 import com.java.cuiyikai.androidbackend.services.UserServices;
 import org.apache.commons.mail.HtmlEmail;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +29,8 @@ public class RegisterController {
     @Autowired
     private TokenServices tokenServices;
 
+    private static final Logger logger = LoggerFactory.getLogger(RegisterController.class);
+
     @PostMapping("/")
     public void registerNewUser(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
         String username = jsonParam.getString("username");
@@ -34,7 +38,7 @@ public class RegisterController {
         String email = jsonParam.getString("email");
         response.setHeader("Content-type", "application/json;charset=UTF-8");
         PrintWriter printWriter = response.getWriter();
-        if(username == null || password == null || email == null)
+        if(username == null || password == null || email == null || username.equals("") || password.equals("") || email.equals(""))
         {
             response.setStatus(400);
             JSONObject reply = new JSONObject();
@@ -120,13 +124,14 @@ public class RegisterController {
 
     @GetMapping("/check/username")
     public void checkUsername(@RequestParam String username, HttpServletResponse response) throws IOException {
+        logger.info("Checking username " + username);
         response.setHeader("Content-type", "application/json;charset=UTF-8");
         PrintWriter printWriter = response.getWriter();
         JSONObject reply = new JSONObject();
         if(userServices.checkUsername(username))
-            reply.put("status", "fail");
-        else
             reply.put("status", "ok");
+        else
+            reply.put("status", "fail");
         printWriter.print(reply);
     }
 }
