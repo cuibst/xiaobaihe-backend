@@ -1,11 +1,12 @@
 package com.java.cuiyikai.androidbackend.controllers;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.java.cuiyikai.androidbackend.entity.Favourite;
-import com.java.cuiyikai.androidbackend.entity.Token;
 import com.java.cuiyikai.androidbackend.services.FavouriteServices;
 import com.java.cuiyikai.androidbackend.services.TokenServices;
+import com.java.cuiyikai.androidbackend.utilities.NetworkUtilityClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -19,187 +20,185 @@ import java.io.PrintWriter;
 public class FavouriteController {
 
     @Autowired
-    FavouriteServices favouriteServices;
+    private FavouriteServices favouriteServices;
 
     @Autowired
-    TokenServices tokenServices;
+    private TokenServices tokenServices;
+
+    private static Logger logger = LoggerFactory.getLogger(FavouriteController.class);
 
     @GetMapping("/getFavourite")
     public void getFavourite(@RequestParam String token, HttpServletResponse response) throws IOException {
-        response.setHeader("Content-type", "application/json;charset=UTF-8");
+        response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
         if(!tokenServices.isTokenValid(token)) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
-            reply.put("status", "fail");
-            reply.put("message", "bad token");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, NetworkUtilityClass.BAD_TOKEN_MESSAGE);
             printWriter.print(reply);
             return;
         }
-        System.out.println("Getting favourite json!!");
         String username = tokenServices.queryUserByToken(token).getUsername();
+        logger.info("Getting favourite for user : {}", username);
         Favourite favourite = favouriteServices.getFavouriteByUsername(username);
         if(favourite == null) {
             favouriteServices.createNewUserDefaultFavourite(username);
             favourite = favouriteServices.getFavouriteByUsername(username);
         }
         JSONObject reply = new JSONObject();
-        reply.put("status", "ok");
-        reply.put("data", favourite.getJson());
+        reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_OK);
+        reply.put(NetworkUtilityClass.PARAMETER_DATA, favourite.getJson());
         printWriter.print(reply);
     }
 
     @PostMapping("/updateFavourite")
     public void updateFavourite(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
-        response.setHeader("Content-type", "application/json;charset=UTF-8");
+        response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
-        String token = jsonParam.getString("token");
+        String token = jsonParam.getString(NetworkUtilityClass.PARAMETER_TOKEN);
         if(!tokenServices.isTokenValid(token)) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
-            reply.put("status", "fail");
-            reply.put("message", "bad token");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, NetworkUtilityClass.BAD_TOKEN_MESSAGE);
             printWriter.print(reply);
             return;
         }
         String username = tokenServices.queryUserByToken(token).getUsername();
-        if(!jsonParam.containsKey("name") || !jsonParam.containsKey("subject") || !jsonParam.containsKey("checked")) {
+        if(!jsonParam.containsKey("name") || !jsonParam.containsKey(NetworkUtilityClass.PARAMETER_SUBJECT) || !jsonParam.containsKey("checked")) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
-            reply.put("status", "fail");
-            reply.put("message", "bad request");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, NetworkUtilityClass.BAD_REQUEST_MESSAGE);
             printWriter.print(reply);
             return;
         }
 
-        System.out.println(jsonParam.getString("name"));
-        System.out.println(jsonParam.getString("subject"));
-        System.out.println(jsonParam.getString("checked"));
-
         favouriteServices.updateFavourite(username, jsonParam);
 
         JSONObject reply = new JSONObject();
-        reply.put("status", "ok");
+        reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_OK);
         printWriter.print(reply);
     }
 
     @PostMapping("/removeDirectory")
     public void removeDirectory(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
-        response.setHeader("Content-type", "application/json;charset=UTF-8");
+        response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
-        String token = jsonParam.getString("token");
+        String token = jsonParam.getString(NetworkUtilityClass.PARAMETER_TOKEN);
         if(!tokenServices.isTokenValid(token)) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
-            reply.put("status", "fail");
-            reply.put("message", "bad token");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, NetworkUtilityClass.BAD_TOKEN_MESSAGE);
             printWriter.print(reply);
             return;
         }
         String username = tokenServices.queryUserByToken(token).getUsername();
-        if(!jsonParam.containsKey("directory")) {
+        if(!jsonParam.containsKey(NetworkUtilityClass.PARAMETER_DIRECTORY)) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
-            reply.put("status", "fail");
-            reply.put("message", "bad request");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, NetworkUtilityClass.BAD_REQUEST_MESSAGE);
             printWriter.print(reply);
             return;
         }
 
-        favouriteServices.removeDirectory(username, jsonParam.getString("directory"));
+        favouriteServices.removeDirectory(username, jsonParam.getString(NetworkUtilityClass.PARAMETER_DIRECTORY));
         JSONObject reply = new JSONObject();
-        reply.put("status", "ok");
+        reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_OK);
         printWriter.print(reply);
     }
 
     @PostMapping("/addDirectory")
     public void addDirectory(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
-        response.setHeader("Content-type", "application/json;charset=UTF-8");
+        response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
-        String token = jsonParam.getString("token");
+        String token = jsonParam.getString(NetworkUtilityClass.PARAMETER_TOKEN);
         if(!tokenServices.isTokenValid(token)) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
-            reply.put("status", "fail");
-            reply.put("message", "bad token");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, NetworkUtilityClass.BAD_TOKEN_MESSAGE);
             printWriter.print(reply);
             return;
         }
         String username = tokenServices.queryUserByToken(token).getUsername();
-        if(!jsonParam.containsKey("directory")) {
+        if(!jsonParam.containsKey(NetworkUtilityClass.PARAMETER_DIRECTORY)) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
-            reply.put("status", "fail");
-            reply.put("message", "bad request");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, NetworkUtilityClass.BAD_REQUEST_MESSAGE);
             printWriter.print(reply);
             return;
         }
 
-        boolean res = favouriteServices.addDirectory(username, jsonParam.getString("directory"));
+        boolean res = favouriteServices.addDirectory(username, jsonParam.getString(NetworkUtilityClass.PARAMETER_DIRECTORY));
         JSONObject reply = new JSONObject();
-        reply.put("status", res ? "ok" : "fail");
+        reply.put(NetworkUtilityClass.PARAMETER_STATUS, res ? NetworkUtilityClass.STATUS_OK : NetworkUtilityClass.STATUS_FAIL);
         printWriter.print(reply);
     }
 
     @PostMapping("/updateDirectory")
     public void updateDirectory(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
-        response.setHeader("Content-type", "application/json;charset=UTF-8");
+        response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
-        String token = jsonParam.getString("token");
+        String token = jsonParam.getString(NetworkUtilityClass.PARAMETER_TOKEN);
         if(!tokenServices.isTokenValid(token)) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
-            reply.put("status", "fail");
-            reply.put("message", "bad token");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, NetworkUtilityClass.BAD_TOKEN_MESSAGE);
             printWriter.print(reply);
             return;
         }
         String username = tokenServices.queryUserByToken(token).getUsername();
-        if(!jsonParam.containsKey("directory") || !jsonParam.containsKey("json")) {
+        if(!jsonParam.containsKey(NetworkUtilityClass.PARAMETER_DIRECTORY) || !jsonParam.containsKey("json")) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
-            reply.put("status", "fail");
-            reply.put("message", "bad request");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, NetworkUtilityClass.BAD_REQUEST_MESSAGE);
             printWriter.print(reply);
             return;
         }
 
-        System.out.printf("update %s%n", jsonParam);
+        logger.info("update {}", jsonParam);
 
-        favouriteServices.updateDirectory(username, jsonParam.getString("directory"), jsonParam.getJSONArray("json"));
+        favouriteServices.updateDirectory(username, jsonParam.getString(NetworkUtilityClass.PARAMETER_DIRECTORY), jsonParam.getJSONArray("json"));
         JSONObject reply = new JSONObject();
-        reply.put("status", "ok");
+        reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_OK);
         printWriter.print(reply);
     }
 
     @PostMapping("/moveDirectory")
     public void moveDirectory(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
-        response.setHeader("Content-type", "application/json;charset=UTF-8");
+        response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
-        String token = jsonParam.getString("token");
+        String token = jsonParam.getString(NetworkUtilityClass.PARAMETER_TOKEN);
         if(!tokenServices.isTokenValid(token)) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
-            reply.put("status", "fail");
-            reply.put("message", "bad token");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, NetworkUtilityClass.BAD_TOKEN_MESSAGE);
             printWriter.print(reply);
             return;
         }
         String username = tokenServices.queryUserByToken(token).getUsername();
-        if(!jsonParam.containsKey("directory") || !jsonParam.containsKey("json")) {
+        if(!jsonParam.containsKey(NetworkUtilityClass.PARAMETER_DIRECTORY) || !jsonParam.containsKey("json")) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
-            reply.put("status", "fail");
-            reply.put("message", "bad request");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, NetworkUtilityClass.BAD_REQUEST_MESSAGE);
             printWriter.print(reply);
             return;
         }
 
-        System.out.printf("move %s%n", jsonParam);
+        logger.info("move {}", jsonParam);
 
-        favouriteServices.moveDirectory(username, jsonParam.getString("directory"), jsonParam.getJSONArray("json"));
+        favouriteServices.moveDirectory(username, jsonParam.getString(NetworkUtilityClass.PARAMETER_DIRECTORY), jsonParam.getJSONArray("json"));
         JSONObject reply = new JSONObject();
-        reply.put("status", "ok");
+        reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_OK);
         printWriter.print(reply);
     }
 

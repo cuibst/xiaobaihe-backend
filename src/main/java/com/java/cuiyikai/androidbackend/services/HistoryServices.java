@@ -5,6 +5,8 @@ import com.java.cuiyikai.androidbackend.entity.User;
 import com.java.cuiyikai.androidbackend.entity.VisitHistory;
 import com.java.cuiyikai.androidbackend.mapper.HistoryMapper;
 import com.java.cuiyikai.androidbackend.mapper.UserMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,11 +15,13 @@ import java.util.List;
 @Service
 public class HistoryServices {
 
-    @Autowired
-    HistoryMapper historyMapper;
+    private static final Logger logger = LoggerFactory.getLogger(HistoryServices.class);
 
     @Autowired
-    UserMapper userMapper;
+    private HistoryMapper historyMapper;
+
+    @Autowired
+    private UserMapper userMapper;
 
     public List<SearchHistory> getLatestHistoryByUsername(String username) {
         return historyMapper.queryLatestHistoryByUsername(username);
@@ -25,12 +29,12 @@ public class HistoryServices {
 
     public void addHistory(String username, String content, String subject) {
         User user = userMapper.queryUserByUsername(username);
-        System.out.printf("Get count: %s %d%n", content, historyMapper.getMatchHistoryCount(user.getId(), content, subject));
+        logger.info("Get count: {} {}%n", content, historyMapper.getMatchHistoryCount(user.getId(), content, subject));
         if(historyMapper.getMatchHistoryCount(user.getId(), content, subject) > 0) {
             historyMapper.updateOldHistory(user.getId(), content, subject);
             return;
         }
-        System.out.println("add new history");
+        logger.info("add new history");
         historyMapper.addHistory(userMapper.queryUserByUsername(username).getId(), content, subject);
     }
 

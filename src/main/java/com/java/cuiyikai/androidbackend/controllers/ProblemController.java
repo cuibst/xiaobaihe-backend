@@ -9,6 +9,7 @@ import com.java.cuiyikai.androidbackend.entity.*;
 import com.java.cuiyikai.androidbackend.services.HistoryServices;
 import com.java.cuiyikai.androidbackend.services.ProblemServices;
 import com.java.cuiyikai.androidbackend.services.TokenServices;
+import com.java.cuiyikai.androidbackend.utilities.NetworkUtilityClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -43,25 +45,21 @@ public class ProblemController {
     @Autowired
     private ProblemServices problemServices;
 
-    final String[] SUBJECTS = {"chinese", "english", "math", "physics", "chemistry", "biology", "history", "geo", "politics"};
-
     private static final ExecutorService executorService = Executors.newCachedThreadPool();
 
     @GetMapping("/")
-    public void getSuggestProblem(@RequestParam("token") String token, @RequestParam(value = "offset", required = false, defaultValue = "0") int offset, HttpServletResponse response) throws Exception {
-        response.setHeader("Content-type", "application/json;charset=UTF-8");
+    public void getSuggestProblem(@RequestParam(NetworkUtilityClass.PARAMETER_TOKEN) String token,
+                                  @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+                                  HttpServletResponse response) throws IOException {
+        response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
         String urlLogin = "http://open.edukg.cn/opedukg/api/typeAuth/user/login";
         URL url = new URL(urlLogin);
         HttpURLConnection loginConnection = (HttpURLConnection) url.openConnection();
         setConnectionHeader(loginConnection, "POST");
         Map<String, String> args = new HashMap<>();
-//        args.put("phone", "15910826331");
-//        args.put("password", "cbst20001117");
-//        args.put("phone", "16688092093");
-//        args.put("password", "0730llhh");
-        args.put("phone", "18211517925");
-        args.put("password", "ldx0881110103");
+        args.put("phone", NetworkUtilityClass.REQUEST_PHONE);
+        args.put("password", NetworkUtilityClass.REQUEST_PASSWORD);
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(loginConnection.getOutputStream(), StandardCharsets.UTF_8));
         writer.write(buildForm(args));
         writer.flush();
@@ -75,14 +73,14 @@ public class ProblemController {
                 buffer.append(line);
             }
             JSONObject loginResponse = JSON.parseObject(buffer.toString());
-            id = loginResponse.getString("id");
+            id = loginResponse.getString(NetworkUtilityClass.PARAMETER_ID);
         }
         if(id == null)
         {
             response.setStatus(500);
             JSONObject reply = new JSONObject();
-            reply.put("status", "fail");
-            reply.put("message", "cannot connect to server");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, "cannot connect to server");
             printWriter.print(reply);
             return;
         }
@@ -100,8 +98,8 @@ public class ProblemController {
         List<String> problemSubjects = new ArrayList<>();
         for(SearchHistory searchHistory : searchHistoryList) {
             Map<String,String> args1 = new HashMap<>();
-            args1.put("id", id);
-            args1.put("course", searchHistory.getSubject());
+            args1.put(NetworkUtilityClass.PARAMETER_ID, id);
+            args1.put(NetworkUtilityClass.PARAMETER_COURSE, searchHistory.getSubject());
             args1.put("searchKey", searchHistory.getContent());
             futureSearchResultList.add(executorService.submit(new SearchResultCallable(args1)));
             subjects.add(searchHistory.getSubject());
@@ -109,7 +107,7 @@ public class ProblemController {
 
         for(VisitHistory visitHistory : visitHistoryList) {
             Map<String, String> args1 = new HashMap<>();
-            args1.put("id", id);
+            args1.put(NetworkUtilityClass.PARAMETER_ID, id);
             args1.put("uriName", visitHistory.getName());
             futureProblems.add(executorService.submit(new ProblemCallable(args1)));
             problemSubjects.add(visitHistory.getSubject());
@@ -122,7 +120,11 @@ public class ProblemController {
             JSONArray data;
             try {
                 data = futureData.get();
-            } catch (Exception e) {
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+                continue;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 e.printStackTrace();
                 continue;
             }
@@ -131,7 +133,7 @@ public class ProblemController {
                     JSONObject entity = JSON.parseObject(obj.toString());
                     String name = entity.getString("label");
                     Map<String, String> args1 = new HashMap<>();
-                    args1.put("id", id);
+                    args1.put(NetworkUtilityClass.PARAMETER_ID, id);
                     args1.put("uriName", name);
                     futureProblems.add(executorService.submit(new ProblemCallable(args1)));
                     problemSubjects.add(subjects.get(i));
@@ -144,8 +146,12 @@ public class ProblemController {
             JSONArray problem;
             try {
                 problem = futureProblem.get();
-            } catch (Exception e) {
+            } catch (ExecutionException e) {
                 e.printStackTrace();
+                continue;
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                Thread.currentThread().interrupt();
                 continue;
             }
             if(problem != null)
@@ -153,8 +159,8 @@ public class ProblemController {
                     logger.info("Current Object: {}", object);
                     JSONObject jsonObject = JSON.parseObject(object.toString());
                     JSONObject object1 = new JSONObject();
-                    object1.put("subject", problemSubjects.get(i));
-                    object1.put("problem", jsonObject);
+                    object1.put(NetworkUtilityClass.PARAMETER_SUBJECT, problemSubjects.get(i));
+                    object1.put(NetworkUtilityClass.PARAMETER_PROBLEM, jsonObject);
                     if(results.containsKey(object1))
                         results.replace(object1, results.get(object1) + 1);
                     else
@@ -172,53 +178,53 @@ public class ProblemController {
             result.add(entry.getKey());
 
         JSONObject reply = new JSONObject();
-        reply.put("status", "ok");
-        reply.put("data", result);
+        reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_OK);
+        reply.put(NetworkUtilityClass.PARAMETER_DATA, result);
         logger.info("reply data : {}", result);
         printWriter.print(reply);
     }
 
     @PostMapping("/addNewSave")
     public void addNewSaveProblem(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
-        logger.info(jsonParam.toString());
-        response.setHeader("Content-type", "application/json;charset=UTF-8");
+        logger.info("Add new save problem : {}", jsonParam);
+        response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
-        if(!jsonParam.containsKey("token") || !jsonParam.containsKey("problem") || !jsonParam.containsKey("subject")) {
+        if(!jsonParam.containsKey(NetworkUtilityClass.PARAMETER_TOKEN) || !jsonParam.containsKey(NetworkUtilityClass.PARAMETER_PROBLEM) || !jsonParam.containsKey(NetworkUtilityClass.PARAMETER_SUBJECT)) {
             JSONObject reply = new JSONObject();
             response.setStatus(406);
-            reply.put("status", "fail");
-            reply.put("message", "bad request");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, NetworkUtilityClass.BAD_REQUEST_MESSAGE);
             printWriter.print(reply);
             return;
         }
-        String token = jsonParam.getString("token");
+        String token = jsonParam.getString(NetworkUtilityClass.PARAMETER_TOKEN);
         User user = tokenServices.queryUserByToken(token);
         if(user == null || !tokenServices.isTokenValid(token)) {
             JSONObject reply = new JSONObject();
             response.setStatus(403);
-            reply.put("status", "fail");
-            reply.put("message", "invalid token");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, NetworkUtilityClass.BAD_TOKEN_MESSAGE);
             printWriter.print(reply);
             return;
         }
-        String problem = jsonParam.getJSONObject("problem").toString();
-        int id = problemServices.insertNewProblem(problem, jsonParam.getString("subject")).getId();
+        String problem = jsonParam.getJSONObject(NetworkUtilityClass.PARAMETER_PROBLEM).toString();
+        int id = problemServices.insertNewProblem(problem, jsonParam.getString(NetworkUtilityClass.PARAMETER_SUBJECT)).getId();
         problemServices.addNewSave(user.getId(), id);
         JSONObject reply = new JSONObject();
-        reply.put("status", "ok");
+        reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_OK);
         printWriter.print(reply);
     }
 
     @GetMapping("/getSaves")
-    public void getSaves(@RequestParam("token") String token, @RequestParam(value = "offset", required = false, defaultValue = "0") int offset, HttpServletResponse response) throws IOException {
-        response.setHeader("Content-type", "application/json;charset=UTF-8");
+    public void getSaves(@RequestParam(NetworkUtilityClass.PARAMETER_TOKEN) String token, @RequestParam(value = "offset", required = false, defaultValue = "0") int offset, HttpServletResponse response) throws IOException {
+        response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
         User user = tokenServices.queryUserByToken(token);
         if(user == null || !tokenServices.isTokenValid(token)) {
             JSONObject reply = new JSONObject();
             response.setStatus(403);
-            reply.put("status", "fail");
-            reply.put("message", "invalid token");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, NetworkUtilityClass.BAD_TOKEN_MESSAGE);
             printWriter.print(reply);
             return;
         }
@@ -227,44 +233,44 @@ public class ProblemController {
         for(Problem problem : problemList) {
             JSONObject jsonObject = JSON.parseObject(problem.getJson());
             JSONObject object = new JSONObject();
-            object.put("subject", problem.getSubject());
-            object.put("problem", jsonObject);
+            object.put(NetworkUtilityClass.PARAMETER_SUBJECT, problem.getSubject());
+            object.put(NetworkUtilityClass.PARAMETER_PROBLEM, jsonObject);
             problemsArray.add(object);
         }
         JSONObject reply = new JSONObject();
-        reply.put("status", "ok");
-        reply.put("data", problemsArray);
+        reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_OK);
+        reply.put(NetworkUtilityClass.PARAMETER_DATA, problemsArray);
         printWriter.print(reply);
     }
 
     @PostMapping("/deleteSave")
     public void deleteSaveProblem(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
-        response.setHeader("Content-type", "application/json;charset=UTF-8");
+        response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
-        if(!jsonParam.containsKey("token") || !jsonParam.containsKey("problem") || !jsonParam.containsKey("subject")) {
+        if(!jsonParam.containsKey(NetworkUtilityClass.PARAMETER_TOKEN) || !jsonParam.containsKey(NetworkUtilityClass.PARAMETER_PROBLEM) || !jsonParam.containsKey(NetworkUtilityClass.PARAMETER_SUBJECT)) {
             JSONObject reply = new JSONObject();
             response.setStatus(406);
-            reply.put("status", "fail");
-            reply.put("message", "bad request");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, NetworkUtilityClass.BAD_REQUEST_MESSAGE);
             printWriter.print(reply);
             return;
         }
-        logger.info(jsonParam.toString());
-        String token = jsonParam.getString("token");
+        logger.info("Delete save problem : {}", jsonParam);
+        String token = jsonParam.getString(NetworkUtilityClass.PARAMETER_TOKEN);
         User user = tokenServices.queryUserByToken(token);
         if(user == null || !tokenServices.isTokenValid(token)) {
             JSONObject reply = new JSONObject();
             response.setStatus(403);
-            reply.put("status", "fail");
-            reply.put("message", "invalid token");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, NetworkUtilityClass.BAD_TOKEN_MESSAGE);
             printWriter.print(reply);
             return;
         }
-        JSONObject problem = jsonParam.getJSONObject("problem");
-        logger.info(problem.toString());
+        JSONObject problem = jsonParam.getJSONObject(NetworkUtilityClass.PARAMETER_PROBLEM);
+        logger.info("Retrived problem : {}", problem);
         problemServices.deleteSave(user.getId(), problem.toString());
         JSONObject reply = new JSONObject();
-        reply.put("status", "ok");
+        reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_OK);
         printWriter.print(reply);
     }
 }

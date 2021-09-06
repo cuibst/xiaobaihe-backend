@@ -3,6 +3,7 @@ package com.java.cuiyikai.androidbackend.callables;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.java.cuiyikai.androidbackend.utilities.NetworkUtilityClass;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -39,7 +40,7 @@ public class ProblemCallable implements Callable<JSONArray> {
                 buffer.append(line);
             }
             JSONObject cardResponse = JSON.parseObject(buffer.toString());
-            result = cardResponse.getJSONArray("data");
+            result = cardResponse.getJSONArray(NetworkUtilityClass.PARAMETER_DATA);
         }
         else
             return new JSONArray();

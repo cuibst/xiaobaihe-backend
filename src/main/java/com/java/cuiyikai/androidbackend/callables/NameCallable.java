@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.java.cuiyikai.androidbackend.entity.Entity;
 import com.java.cuiyikai.androidbackend.entity.Uri;
 import com.java.cuiyikai.androidbackend.services.UriServices;
+import com.java.cuiyikai.androidbackend.utilities.NetworkUtilityClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,11 +44,11 @@ public class NameCallable implements Callable<JSONObject> {
             HttpURLConnection cardConnection = (HttpURLConnection) url.openConnection();
             setConnectionHeader(cardConnection, "POST");
             Map<String, String> args = new HashMap<>();
-            args.put("id", id);
+            args.put(NetworkUtilityClass.PARAMETER_ID, id);
             args.put("uri", uri.getUri());
-            args.put("course", uri.getSubject());
-            logger.info(url.toString());
-            logger.info("{} {} {}", id, uri.getUri(), uri.getSubject());
+            args.put(NetworkUtilityClass.PARAMETER_COURSE, uri.getSubject());
+            logger.info("{}", url);
+            logger.info("Name callable : {} {} {}", id, uri.getUri(), uri.getSubject());
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(cardConnection.getOutputStream(), StandardCharsets.UTF_8));
             writer.write(buildForm(args));
             writer.flush();
@@ -59,11 +60,11 @@ public class NameCallable implements Callable<JSONObject> {
                     buffer.append(line);
                 }
                 JSONObject cardResponse = JSON.parseObject(buffer.toString());
-                JSONObject data = cardResponse.getJSONObject("data");
+                JSONObject data = cardResponse.getJSONObject(NetworkUtilityClass.PARAMETER_DATA);
                 if (data == null || data.getString("entity_name") == null)
                     return null;
                 uriName.put("name", data.getString("entity_name"));
-                uriName.put("subject", uri.getSubject());
+                uriName.put(NetworkUtilityClass.PARAMETER_SUBJECT, uri.getSubject());
                 uriServices.insertNewEntity(uriName.toString());
                 uriServices.updateEntityId(uri.getId(), uriServices.getEntityByJson(uriName.toString()).getId());
                 reader.close();

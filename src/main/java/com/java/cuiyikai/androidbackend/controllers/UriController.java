@@ -10,6 +10,7 @@ import com.java.cuiyikai.androidbackend.entity.*;
 import com.java.cuiyikai.androidbackend.services.HistoryServices;
 import com.java.cuiyikai.androidbackend.services.TokenServices;
 import com.java.cuiyikai.androidbackend.services.UriServices;
+import com.java.cuiyikai.androidbackend.utilities.NetworkUtilityClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -47,20 +49,23 @@ public class UriController {
 
     @PostMapping("/add")
     public void addUri(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
-        response.setHeader("Content-type", "application/json;charset=UTF-8");
+        response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
         Uri uri = new Uri();
         uri.setUri(jsonParam.getString("uri"));
-        uri.setSubject(jsonParam.getString("subject"));
+        uri.setSubject(jsonParam.getString(NetworkUtilityClass.PARAMETER_SUBJECT));
         int result = uriServices.insertNewUri(uri);
         JSONObject reply = new JSONObject();
-        reply.put("status", result > 0 ? "ok" : "fail");
+        reply.put(NetworkUtilityClass.PARAMETER_STATUS, result > 0 ? NetworkUtilityClass.STATUS_OK : NetworkUtilityClass.STATUS_FAIL);
         printWriter.print(reply);
     }
 
     @GetMapping("/getname")
-    public void getName(@RequestParam(name = "subject", required = false, defaultValue = "") String subject, @RequestParam(name = "token", required = false, defaultValue = "") String token, @RequestParam(name = "offset", required = false, defaultValue = "0") int offset, HttpServletResponse response) throws Exception {
-        response.setHeader("Content-type", "application/json;charset=UTF-8");
+    public void getName(@RequestParam(name = NetworkUtilityClass.PARAMETER_SUBJECT, required = false, defaultValue = "") String subject,
+                        @RequestParam(name = NetworkUtilityClass.PARAMETER_TOKEN, required = false, defaultValue = "") String token,
+                        @RequestParam(name = "offset", required = false, defaultValue = "0") int offset, HttpServletResponse response)
+            throws IOException {
+        response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
         List<Uri> uriList;
         String urlLogin = "http://open.edukg.cn/opedukg/api/typeAuth/user/login";
@@ -68,12 +73,8 @@ public class UriController {
         HttpURLConnection loginConnection = (HttpURLConnection) url.openConnection();
         setConnectionHeader(loginConnection, "POST");
         Map<String, String> args = new HashMap<>();
-//        args.put("phone", "15910826331");
-//        args.put("password", "cbst20001117");
-//        args.put("phone", "16688092093");
-//        args.put("password", "0730llhh");
-        args.put("phone", "18211517925");
-        args.put("password", "ldx0881110103");
+        args.put("phone", NetworkUtilityClass.REQUEST_PHONE);
+        args.put("password", NetworkUtilityClass.REQUEST_PASSWORD);
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(loginConnection.getOutputStream(), StandardCharsets.UTF_8));
         writer.write(buildForm(args));
         writer.flush();
@@ -87,14 +88,14 @@ public class UriController {
                 buffer.append(line);
             }
             JSONObject loginResponse = JSON.parseObject(buffer.toString());
-            id = loginResponse.getString("id");
+            id = loginResponse.getString(NetworkUtilityClass.PARAMETER_ID);
         }
         if(id == null)
         {
             response.setStatus(500);
             JSONObject reply = new JSONObject();
-            reply.put("status", "fail");
-            reply.put("message", "cannot connect to server");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, "cannot connect to server");
             printWriter.print(reply);
             return;
         }
@@ -112,8 +113,8 @@ public class UriController {
                 List<String> subjects = new ArrayList<>();
                 for(SearchHistory searchHistory : searchHistoryList) {
                     Map<String,String> args1 = new HashMap<>();
-                    args1.put("id", id);
-                    args1.put("course", searchHistory.getSubject());
+                    args1.put(NetworkUtilityClass.PARAMETER_ID, id);
+                    args1.put(NetworkUtilityClass.PARAMETER_COURSE, searchHistory.getSubject());
                     args1.put("searchKey", searchHistory.getContent());
                     futureSearchResultList.add(executorService.submit(new SearchResultCallable(args1)));
                     subjects.add(searchHistory.getSubject());
@@ -124,17 +125,21 @@ public class UriController {
                     JSONArray data;
                     try {
                         data = futureData.get();
-                    } catch (Exception e) {
+                    } catch (ExecutionException e) {
                         e.printStackTrace();
+                        continue;
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        Thread.currentThread().interrupt();
                         continue;
                     }
                     if(data != null) {
-                        logger.info(data.toString());
+                        logger.info("Data : {}", data);
                         for (Object obj : data) {
                             JSONObject entity = JSON.parseObject(obj.toString());
                             JSONObject resultObject = new JSONObject();
                             resultObject.put("name", entity.getString("label"));
-                            resultObject.put("subject", sub);
+                            resultObject.put(NetworkUtilityClass.PARAMETER_SUBJECT, sub);
                             if(results.containsKey(resultObject))
                                 results.replace(resultObject, results.get(resultObject) + 1);
                             else
@@ -147,8 +152,8 @@ public class UriController {
 
                 for(VisitHistory visitHistory : visitHistoryList) {
                     Map<String, String> args1 = new HashMap<>();
-                    args1.put("id", id);
-                    args1.put("course", visitHistory.getSubject());
+                    args1.put(NetworkUtilityClass.PARAMETER_ID, id);
+                    args1.put(NetworkUtilityClass.PARAMETER_COURSE, visitHistory.getSubject());
                     args1.put("subjectName", visitHistory.getName());
                     futureRelateList.add(executorService.submit(new RelatedCallable(args1)));
                 }
@@ -157,8 +162,12 @@ public class UriController {
                     JSONArray result;
                     try {
                         result = futureRelateList.get(i).get();
-                    } catch (Exception e) {
+                    } catch (ExecutionException e) {
                         e.printStackTrace();
+                        continue;
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        Thread.currentThread().interrupt();
                         continue;
                     }
                     VisitHistory visitHistory = visitHistoryList.get(i);
@@ -166,8 +175,8 @@ public class UriController {
                         for (Object obj : result) {
                             JSONObject entity = JSON.parseObject(obj.toString());
                             JSONObject resultObject = new JSONObject();
-                            resultObject.put("name", entity.getString("subject"));
-                            resultObject.put("subject", visitHistory.getSubject());
+                            resultObject.put("name", entity.getString(NetworkUtilityClass.PARAMETER_SUBJECT));
+                            resultObject.put(NetworkUtilityClass.PARAMETER_SUBJECT, visitHistory.getSubject());
                             if(results.containsKey(resultObject))
                                 results.replace(resultObject, results.get(resultObject) + 1);
                             else
@@ -176,7 +185,7 @@ public class UriController {
                     }
                 }
 
-                logger.info(results.toString());
+                logger.info("Result : {}", results);
 
                 List<Map.Entry<JSONObject, Integer>> entryList = new ArrayList<>(results.entrySet());
                 entryList.sort(Map.Entry.comparingByValue());
@@ -188,8 +197,8 @@ public class UriController {
                     result.add(entry.getKey());
 
                 JSONObject reply = new JSONObject();
-                reply.put("status", "ok");
-                reply.put("data", result);
+                reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_OK);
+                reply.put(NetworkUtilityClass.PARAMETER_DATA, result);
                 printWriter.print(reply);
                 return;
             }
@@ -197,7 +206,7 @@ public class UriController {
         else
             uriList = uriServices.getRandomUriBySubject(subject);
         JSONObject reply = new JSONObject();
-        reply.put("status", "ok");
+        reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_OK);
         JSONArray uriNames = new JSONArray();
         List<Future<JSONObject>> futureUris = new ArrayList<>();
         for (Uri uri : uriList) {
@@ -207,15 +216,19 @@ public class UriController {
             JSONObject object;
             try {
                 object = futureUri.get();
-            } catch (Exception e) {
+            } catch (ExecutionException e) {
                 e.printStackTrace();
+                continue;
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                Thread.currentThread().interrupt();
                 continue;
             }
             if(object != null)
                 uriNames.add(object);
         }
-        logger.info(uriNames.toString());
-        reply.put("data", uriNames);
+        logger.info("Result : {}", uriNames);
+        reply.put(NetworkUtilityClass.PARAMETER_DATA, uriNames);
         printWriter.print(reply);
     }
 }

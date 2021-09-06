@@ -1,7 +1,6 @@
 package com.java.cuiyikai.androidbackend.services;
 
 import com.java.cuiyikai.androidbackend.entity.Problem;
-import com.java.cuiyikai.androidbackend.entity.SaveProblem;
 import com.java.cuiyikai.androidbackend.mapper.ProblemsMapper;
 import com.java.cuiyikai.androidbackend.mapper.SaveProblemMapper;
 import org.springframework.beans.factory.annotation.Autowired;

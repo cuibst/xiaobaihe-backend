@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.java.cuiyikai.androidbackend.entity.User;
 import com.java.cuiyikai.androidbackend.services.TokenServices;
 import com.java.cuiyikai.androidbackend.services.UserServices;
+import com.java.cuiyikai.androidbackend.utilities.NetworkUtilityClass;
 import org.apache.commons.mail.HtmlEmail;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -21,7 +22,7 @@ import java.util.Date;
 @RequestMapping("/api/user")
 public class UserController {
 
-    private final static String BACKEND_ADDRESS = "http://183.172.183.37:8080/api/register/check?token=";
+    private static final String BACKEND_ADDRESS = "http://183.172.183.37:8080/api/register/check?token=";
 
     @Autowired
     private TokenServices tokenServices;
@@ -31,28 +32,28 @@ public class UserController {
 
     @PostMapping("/changeInfo")
     public void changeUserInfo(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
-        response.setHeader("Content-type", "application/json;charset=UTF-8");
+        response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
-        String token = jsonParam.getString("token");
+        String token = jsonParam.getString(NetworkUtilityClass.PARAMETER_TOKEN);
         if(!tokenServices.isTokenValid(token)) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
-            reply.put("status", "fail");
-            reply.put("message", "bad token");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, NetworkUtilityClass.BAD_TOKEN_MESSAGE);
             printWriter.print(reply);
             return;
         }
         User user = tokenServices.queryUserByToken(token);
-        if(!jsonParam.containsKey("password") || !jsonParam.containsKey("email") || !jsonParam.containsKey("oldPassword") || !jsonParam.getString("oldPassword").equals(user.getPassword())) {
+        if(!jsonParam.containsKey("password") || !jsonParam.containsKey(NetworkUtilityClass.PARAMETER_EMAIL) || !jsonParam.containsKey("oldPassword") || !jsonParam.getString("oldPassword").equals(user.getPassword())) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
-            reply.put("status", "fail");
-            reply.put("message", "bad request");
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, NetworkUtilityClass.BAD_REQUEST_MESSAGE);
             printWriter.print(reply);
             return;
         }
-        boolean changedEmail = user.getEmail().equals(jsonParam.getString("email"));
-        user.setEmail(jsonParam.getString("email"));
+        boolean changedEmail = user.getEmail().equals(jsonParam.getString(NetworkUtilityClass.PARAMETER_EMAIL));
+        user.setEmail(jsonParam.getString(NetworkUtilityClass.PARAMETER_EMAIL));
         if(changedEmail) {
             String validateToken = tokenServices.insertNewToken(user.getUsername());
             String email = user.getEmail();
@@ -71,17 +72,17 @@ public class UserController {
             } catch (Exception e) {
                 response.setStatus(406);
                 JSONObject reply = new JSONObject();
-                reply.put("status", "fail");
-                reply.put("message", "incorrect email address");
+                reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+                reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, "incorrect email address");
                 printWriter.print(reply);
                 return;
             }
         }
         user.setPassword(jsonParam.getString("password"));
-        user.setEmail(jsonParam.getString("email"));
+        user.setEmail(jsonParam.getString(NetworkUtilityClass.PARAMETER_EMAIL));
         userServices.updateUserInfo(user, changedEmail);
         JSONObject reply = new JSONObject();
-        reply.put("status", "ok");
+        reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_OK);
         printWriter.print(reply);
     }
 }

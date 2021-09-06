@@ -3,6 +3,7 @@ package com.java.cuiyikai.androidbackend.callables;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.java.cuiyikai.androidbackend.utilities.NetworkUtilityClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,9 +36,10 @@ public class RelatedCallable implements Callable<JSONArray> {
         HttpURLConnection cardConnection = (HttpURLConnection) url.openConnection();
         setConnectionHeader(cardConnection, "POST");
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(cardConnection.getOutputStream(), StandardCharsets.UTF_8));
-        writer.write(buildForm(args));
-        logger.info(url.toString());
-        logger.info(buildForm(args));
+        String formData = buildForm(args);
+        writer.write(formData);
+        logger.info("{}", url);
+        logger.info("Relate callable form : {}", formData);
         writer.flush();
         JSONArray result;
         if(cardConnection.getResponseCode() == 200)
@@ -49,7 +51,7 @@ public class RelatedCallable implements Callable<JSONArray> {
                 buffer.append(line);
             }
             JSONObject cardResponse = JSON.parseObject(buffer.toString());
-            result = cardResponse.getJSONArray("data");
+            result = cardResponse.getJSONArray(NetworkUtilityClass.PARAMETER_DATA);
         }
         else
             return new JSONArray();

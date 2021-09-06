@@ -7,6 +7,9 @@ import com.java.cuiyikai.androidbackend.entity.Favourite;
 import com.java.cuiyikai.androidbackend.entity.User;
 import com.java.cuiyikai.androidbackend.mapper.FavouriteMapper;
 import com.java.cuiyikai.androidbackend.mapper.UserMapper;
+import com.java.cuiyikai.androidbackend.utilities.NetworkUtilityClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +19,8 @@ import java.util.Set;
 
 @Service
 public class FavouriteServices {
+
+    private static final Logger logger = LoggerFactory.getLogger(FavouriteServices.class);
 
     @Autowired
     private FavouriteMapper favouriteMapper;
@@ -50,7 +55,7 @@ public class FavouriteServices {
             if(directorySet.contains(entry.getKey()) && flag == -1) {
                 JSONObject object = new JSONObject();
                 object.put("name", value.getString("name"));
-                object.put("subject", value.getString("subject"));
+                object.put(NetworkUtilityClass.PARAMETER_SUBJECT, value.getString(NetworkUtilityClass.PARAMETER_SUBJECT));
                 array.add(object);
                 favouriteJson.replace(entry.getKey(), array);
             } else if(!directorySet.contains(entry.getKey()) && flag != -1) {
@@ -84,7 +89,7 @@ public class FavouriteServices {
         if(!favouriteJson.containsKey(directoryName))
             return;
         favouriteJson.replace(directoryName, jsonArray);
-        System.out.printf("update %s%n", favouriteJson);
+        logger.info("update {}", favouriteJson);
         favouriteMapper.updateUserFavourite(userMapper.queryUserByUsername(username).getId(), favouriteJson.toJSONString());
     }
 
@@ -101,7 +106,7 @@ public class FavouriteServices {
             if(!contains.contains(JSON.parseObject(obj.toString()).getString("name")))
                 array.add(obj);
         favouriteJson.replace(directoryName, array);
-        System.out.printf("move %s%n", favouriteJson);
+        logger.info("move {}", favouriteJson);
         favouriteMapper.updateUserFavourite(userMapper.queryUserByUsername(username).getId(), favouriteJson.toJSONString());
     }
 
