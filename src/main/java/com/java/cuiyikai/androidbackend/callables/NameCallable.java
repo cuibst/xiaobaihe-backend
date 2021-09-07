@@ -58,12 +58,12 @@ public class NameCallable implements Callable<JSONObject> {
     /**
      * {@inheritDoc}
      * @return Data in {@link JSONObject} as follows.
-     * <p><pre>{@code
+     * <pre>{@code
      * {
      *      "name" :    < String represents Uri's name. >
      *      "subject" : < String represents Uri's subject. >
      * }
-     * }</pre></p>
+     * }</pre>
      * @throws Exception
      */
     @Override

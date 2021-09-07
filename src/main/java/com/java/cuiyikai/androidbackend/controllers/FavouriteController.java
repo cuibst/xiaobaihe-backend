@@ -228,13 +228,13 @@ public class FavouriteController {
      *                  "token"     : Corresponding user's request token. <br>
      *                  "directory" : The name of the directory to be added. <br>
      *                  "json"      : A {@link com.alibaba.fastjson.JSONArray}, all of its elements are as follows :
+     *                  </p>
      *                  <pre>{@code
      *    {
      *        "name"    : < entity's name >
      *        "subject" : < entity's subject >
      *    }
      *                  }</pre>
-     *                  </p>
      * @param response A {@link HttpServletResponse}, see {@link PostMapping}.
      * @throws IOException see {@link PostMapping}
      */
@@ -282,13 +282,13 @@ public class FavouriteController {
      *                  "token"     : Corresponding user's request token. <br>
      *                  "directory" : The name of the directory to be added. <br>
      *                  "json"      : A {@link com.alibaba.fastjson.JSONArray}, all of its elements are as follows :
+     *                  </p>
      *                  <pre>{@code
      *    {
      *        "name"    : < entity's name >
      *        "subject" : < entity's subject >
      *    }
      *                  }</pre>
-     *                  </p>
      * @param response A {@link HttpServletResponse}, see {@link PostMapping}.
      * @throws IOException see {@link PostMapping}
      */

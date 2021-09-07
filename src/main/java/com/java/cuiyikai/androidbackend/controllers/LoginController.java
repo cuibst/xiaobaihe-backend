@@ -16,10 +16,14 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+/**
+ * <p> {@link Controller} for the login-related apis. </p>
+ * <p> Mapped to url {@code "/api/login"}</p>
+ */
 @Controller
 @RequestMapping("/api/login")
-@CrossOrigin(origins = "*")
 public class LoginController {
+
     @Autowired
     private UserServices userServices;
 
@@ -28,6 +32,26 @@ public class LoginController {
 
     private static final Logger logger = LoggerFactory.getLogger(LoginController.class);
 
+    /**
+     * <p>Receive username and password, and reply request token for this user</p>
+     * <p>Map to url {@code "/"}</p>
+     * <p>Uses {@link RequestMethod#POST} method.</p>
+     * <p>Reply a {@link JSONObject} as follows:</p>
+     * <pre>{@code
+     * {
+     *     "status"   : "ok" / "fail",
+     *     "message"  : < Message of corresponding result, e.g., log in successfully when success >,
+     *     "token”    : < Only reply when success, user's request token >
+     * }
+     * }</pre>
+     * @param jsonParam A {@link JSONObject} with login information, should contain following keys :
+     *                  <p>
+     *                  "username" : the username.
+     *                  "password" : the password.
+     *                  </p>
+     * @param response A {@link HttpServletResponse}, see {@link PostMapping}.
+     * @throws IOException see {@link PostMapping}
+     */
     @PostMapping("/")
     public void login(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
         response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
@@ -65,6 +89,22 @@ public class LoginController {
         printWriter.print(reply);
     }
 
+    /**
+     * <p>Token exchange api.</p>
+     * <p>Use an old token of a user to exchange a new token.</p>
+     * <p>Uses {@link RequestMethod#GET} method.</p>
+     * <p>Map to url {@code "/exchangeToken"}</p>
+     * <p>Reply a {@link JSONObject} as follows</p>
+     * <pre>{@code
+     * {
+     *     "status" : "ok" / "fail",
+     *     "token"  : < Only reply when success, user's new token >
+     * }
+     * }</pre>
+     * @param token User's old token
+     * @param response A {@link HttpServletResponse}, see {@link GetMapping}.
+     * @throws IOException see {@link GetMapping}
+     */
     @GetMapping("/exchangeToken")
     public void exchangeToken(@RequestParam(NetworkUtilityClass.PARAMETER_TOKEN) String token, HttpServletResponse response) throws IOException {
         User user = tokenServices.queryUserByToken(token);
