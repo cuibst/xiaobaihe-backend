@@ -3,6 +3,7 @@ package com.java.cuiyikai.androidbackend.controllers;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.java.cuiyikai.androidbackend.callables.LoginCallable;
 import com.java.cuiyikai.androidbackend.callables.NameCallable;
 import com.java.cuiyikai.androidbackend.callables.RelatedCallable;
 import com.java.cuiyikai.androidbackend.callables.SearchResultCallable;
@@ -68,39 +69,26 @@ public class UriController {
         response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
         List<Uri> uriList;
-        String urlLogin = "http://open.edukg.cn/opedukg/api/typeAuth/user/login";
-        URL url = new URL(urlLogin);
-        HttpURLConnection loginConnection = (HttpURLConnection) url.openConnection();
-        setConnectionHeader(loginConnection, "POST");
-        Map<String, String> args = new HashMap<>();
-        args.put("phone", NetworkUtilityClass.REQUEST_PHONE);
-        args.put("password", NetworkUtilityClass.REQUEST_PASSWORD);
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(loginConnection.getOutputStream(), StandardCharsets.UTF_8));
-        writer.write(buildForm(args));
-        writer.flush();
         String id = null;
-        if(loginConnection.getResponseCode() == 200)
-        {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(loginConnection.getInputStream(), StandardCharsets.UTF_8));
-            String line;
-            StringBuilder buffer = new StringBuilder();
-            while((line = reader.readLine()) != null) {
-                buffer.append(line);
-            }
-            JSONObject loginResponse = JSON.parseObject(buffer.toString());
-            id = loginResponse.getString(NetworkUtilityClass.PARAMETER_ID);
-        }
-        if(id == null)
-        {
+        try {
+            id = executorService.submit(new LoginCallable()).get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            Thread.currentThread().interrupt();
             response.setStatus(500);
             JSONObject reply = new JSONObject();
             reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
-            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, "cannot connect to server");
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, "Cannot connect to server.");
+            printWriter.print(reply);
+            return;
+        } catch (ExecutionException e) {
+            response.setStatus(500);
+            JSONObject reply = new JSONObject();
+            reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
+            reply.put(NetworkUtilityClass.PARAMETER_MESSAGE, "Cannot connect to server.");
             printWriter.print(reply);
             return;
         }
-        writer.close();
-        loginConnection.disconnect();
         if(subject.equals("")) {
             if(!tokenServices.isTokenValid(token))
                 uriList = uriServices.getRandomUri();
