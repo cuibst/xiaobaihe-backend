@@ -23,6 +23,19 @@ import java.util.concurrent.Callable;
 import static com.java.cuiyikai.androidbackend.utilities.NetworkUtilityClass.buildForm;
 import static com.java.cuiyikai.androidbackend.utilities.NetworkUtilityClass.setConnectionHeader;
 
+/**
+ * Class {@link NameCallable} implements {@link Callable}.
+ * <p>This {@link Callable} is used to get the name for the corresponding {@link Uri}.</p>
+ * <p>It will first search through the whole database through {@link UriServices}, <br>
+ * and fetch it from backend and insert it into the database when the corresponding name doesn't exist. </p>
+ * <p> Returns data in {@link JSONObject} as follows. </p>
+ * <pre>{@code
+ * {
+ *      "name" :    < String represents Uri's name. >
+ *      "subject" : < String represents Uri's subject. >
+ * }
+ * }</pre>
+ */
 public class NameCallable implements Callable<JSONObject> {
 
     private final Uri uri;
@@ -30,12 +43,29 @@ public class NameCallable implements Callable<JSONObject> {
     private final String id;
     private static final Logger logger = LoggerFactory.getLogger(NameCallable.class);
 
+    /**
+     * Only constructor for the {@link NameCallable} class.
+     * @param uri The {@link Uri} whose name is wanted.
+     * @param uriServices The {@link UriServices} being used to visit the database.
+     * @param id The backend visit token for edukg.
+     */
     public NameCallable(Uri uri, UriServices uriServices, String id) {
         this.uri = uri;
         this.uriServices = uriServices;
         this.id = id;
     }
 
+    /**
+     * {@inheritDoc}
+     * @return Data in {@link JSONObject} as follows.
+     * <p><pre>{@code
+     * {
+     *      "name" :    < String represents Uri's name. >
+     *      "subject" : < String represents Uri's subject. >
+     * }
+     * }</pre></p>
+     * @throws Exception
+     */
     @Override
     public JSONObject call() throws Exception {
         if(uri.getEntity_id() == -1) {

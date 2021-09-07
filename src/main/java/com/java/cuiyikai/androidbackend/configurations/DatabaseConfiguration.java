@@ -5,7 +5,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
 /**
- * The configuration class to load the settings for database.
+ * <p>The configuration class to load the settings for database.</p>
+ * <p>Edit these values in application.yml</p>
  */
 @Configuration
 @PropertySource("classpath:application.yml")
