@@ -93,7 +93,7 @@ public class NameCallable implements Callable<JSONObject> {
                 JSONObject data = cardResponse.getJSONObject(NetworkUtilityClass.PARAMETER_DATA);
                 if (data == null || data.getString("entity_name") == null)
                     return null;
-                uriName.put("name", data.getString("entity_name"));
+                uriName.put(NetworkUtilityClass.PARAMETER_NAME, data.getString("entity_name"));
                 uriName.put(NetworkUtilityClass.PARAMETER_SUBJECT, uri.getSubject());
                 uriServices.insertNewEntity(uriName.toString());
                 uriServices.updateEntityId(uri.getId(), uriServices.getEntityByJson(uriName.toString()).getId());

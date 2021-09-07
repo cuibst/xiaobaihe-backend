@@ -21,7 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The controller class for api related to visit histories.
+ * <p> {@link Controller} for the history-related apis. </p>
+ * <p> Mapped to url {@code "/api/history"}</p>
  */
 @Controller
 @RequestMapping("/api/history")
@@ -36,12 +37,23 @@ public class HistoryController {
     private static final Logger logger = LoggerFactory.getLogger(HistoryController.class);
 
     /**
-     * Reply the last 10 search history of the user with the given name in json. <br>
-     * Response a json as follows. <br>
-     * {NetworkUtilityClass.PARAMETER_DATA : [(at most 10 related search history)], NetworkUtilityClass.PARAMETER_STATUS : NetworkUtilityClass.STATUS_OK }
-     * @param token The username you want to check, given in GET method.
-     * @param response The response in json
-     * @throws IOException when {@link java.io.PrintWriter} encounters some internal errors.
+     * <p>Reply the last 10 search history of the user with the given name in json. </p>
+     * <p> Mapped to uri {@code "/getHistory"}</p>
+     * <p>Response a {@link JSONObject} as follows. </p>
+     * <p>Use {@link RequestMethod#GET} Method</p>
+     * <pre>{@code
+     * {
+     *     "data"   : [
+     *     {
+     *         "content" : < search content >,
+     *         "subject" : < correspond subject >
+     *     },...],
+     *     "status" : "ok"
+     * }
+     * }</pre>
+     * @param token The request token of the user.
+     * @param response A {@link HttpServletResponse}, see {@link GetMapping}.
+     * @throws IOException see {@link GetMapping}
      */
     @GetMapping("/getHistory")
     public void getUserHistory(@RequestParam(NetworkUtilityClass.PARAMETER_TOKEN) String token, HttpServletResponse response) throws IOException {
@@ -71,6 +83,19 @@ public class HistoryController {
         logger.info("Search history for user:{} replied.", username);
     }
 
+    /**
+     * <p>Add a new search history of the given user to the database</p>
+     * <p>Uses {@link RequestMethod#GET} for simplicity. And reply the json as follows (when success).</p>
+     * <pre>{@code
+     * {
+     *      "status" : "ok"
+     * }}</pre>
+     * @param token The request token of the corresponding user.
+     * @param content The search content of the history
+     * @param subject The subject of the history
+     * @param response A {@link HttpServletResponse}, see {@link GetMapping}.
+     * @throws IOException see {@link GetMapping}
+     */
     @GetMapping("/addHistory")
     public void addHistory(@RequestParam(NetworkUtilityClass.PARAMETER_TOKEN) String token, @RequestParam("content") String content, @RequestParam(NetworkUtilityClass.PARAMETER_SUBJECT) String subject, HttpServletResponse response) throws IOException {
         logger.info("token = {}, content = {}", token, content);
@@ -91,9 +116,26 @@ public class HistoryController {
         printWriter.print(reply);
     }
 
+    /**
+     * <p>Remove a search history of the given user from the database</p>
+     * <p>Uses {@link RequestMethod#GET} for simplicity. And reply the json as follows (when success).</p>
+     * <pre>{@code
+     * {
+     *      "status" : "ok"
+     * }}</pre>
+     * @param token The request token of the corresponding user.
+     * @param content (optional) The search content of the history
+     * @param subject (optional) The subject of the history
+     * @param allFLag (optional) If {@code allFlag} is true, it will remove all the search history of the user.
+     * @param response A {@link HttpServletResponse}, see {@link GetMapping}.
+     * @throws IOException see {@link GetMapping}
+     */
     @GetMapping("/removeHistory")
-    public void removeHistory(@RequestParam(NetworkUtilityClass.PARAMETER_TOKEN) String token, @RequestParam(value = "content", required = false, defaultValue = "") String content, @RequestParam(value = NetworkUtilityClass.PARAMETER_SUBJECT, required = false, defaultValue = "") String subject,
-                              @RequestParam(value = "all", required = false, defaultValue = "false") boolean allFLag, HttpServletResponse response) throws IOException {
+    public void removeHistory(@RequestParam(NetworkUtilityClass.PARAMETER_TOKEN) String token,
+                              @RequestParam(value = "content", required = false, defaultValue = "") String content,
+                              @RequestParam(value = NetworkUtilityClass.PARAMETER_SUBJECT, required = false, defaultValue = "") String subject,
+                              @RequestParam(value = "all", required = false, defaultValue = "false") boolean allFLag,
+                              HttpServletResponse response) throws IOException {
         response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
         if(content.equals("") && !allFLag) {
@@ -123,8 +165,27 @@ public class HistoryController {
         printWriter.print(reply);
     }
 
+    /**
+     * <p>Reply the last 10 visit history of the user with the given name in json. </p>
+     * <p> Mapped to uri {@code "/getVisitHistory"}</p>
+     * <p>Response a {@link JSONObject} as follows. </p>
+     * <p>Use {@link RequestMethod#GET} Method</p>
+     * <pre>{@code
+     * {
+     *     "data"   : [{
+     *         "name"    : < entity name >,
+     *         "subject" : < correspond subject >
+     *     }],
+     *     "status" : "ok"
+     * }
+     * }</pre>
+     * @param token The request token of the user.
+     * @param response A {@link HttpServletResponse}, see {@link GetMapping}.
+     * @throws IOException see {@link GetMapping}
+     */
     @GetMapping("/getVisitHistory")
-    public void getVisitHistory(@RequestParam(NetworkUtilityClass.PARAMETER_TOKEN) String token, HttpServletResponse response) throws IOException {
+    public void getVisitHistory(@RequestParam(NetworkUtilityClass.PARAMETER_TOKEN) String token,
+                                HttpServletResponse response) throws IOException {
         response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
         if(!tokenServices.isTokenValid(token)) {
@@ -140,7 +201,7 @@ public class HistoryController {
         ArrayList<JSONObject> result = new ArrayList<>();
         for (VisitHistory visitHistory : visitHistoryList) {
             JSONObject jsonObject = new JSONObject();
-            jsonObject.put("name", visitHistory.getName());
+            jsonObject.put(NetworkUtilityClass.PARAMETER_NAME, visitHistory.getName());
             jsonObject.put(NetworkUtilityClass.PARAMETER_SUBJECT, visitHistory.getSubject());
             jsonObject.put("time", visitHistory.getTime());
             result.add(jsonObject);
@@ -152,8 +213,24 @@ public class HistoryController {
         logger.info("Search history for user:{} replied.", user.getUsername());
     }
 
+    /**
+     * <p>Add a new visit history of the given user to the database</p>
+     * <p>Uses {@link RequestMethod#GET} for simplicity. And reply the json as follows (when success).</p>
+     * <pre>{@code
+     * {
+     *      "status" : "ok"
+     * }}</pre>
+     * @param token The request token of the corresponding user.
+     * @param name The entity name of the visit history
+     * @param subject The subject of the history
+     * @param response A {@link HttpServletResponse}, see {@link GetMapping}.
+     * @throws IOException see {@link GetMapping}
+     */
     @GetMapping("/addVisitHistory")
-    public void addVisitHistory(@RequestParam(NetworkUtilityClass.PARAMETER_TOKEN) String token, @RequestParam("name") String name, @RequestParam(NetworkUtilityClass.PARAMETER_SUBJECT) String subject, HttpServletResponse response) throws IOException {
+    public void addVisitHistory(@RequestParam(NetworkUtilityClass.PARAMETER_TOKEN) String token,
+                                @RequestParam(NetworkUtilityClass.PARAMETER_NAME) String name,
+                                @RequestParam(NetworkUtilityClass.PARAMETER_SUBJECT) String subject,
+                                HttpServletResponse response) throws IOException {
         response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
         if(!tokenServices.isTokenValid(token)) {
@@ -171,8 +248,24 @@ public class HistoryController {
         printWriter.print(reply);
     }
 
+    /**
+     * <p>Remove a visit history of the given user from the database</p>
+     * <p>Uses {@link RequestMethod#GET} for simplicity. And reply the json as follows (when success).</p>
+     * <pre>{@code
+     * {
+     *      "status" : "ok"
+     * }}</pre>
+     * @param token The request token of the corresponding user.
+     * @param name (optional) The entity name of the history
+     * @param subject (optional) The subject of the history
+     * @param response A {@link HttpServletResponse}, see {@link GetMapping}.
+     * @throws IOException see {@link GetMapping}
+     */
     @GetMapping("/removeVisitHistory")
-    public void removeVisitHistory(@RequestParam(NetworkUtilityClass.PARAMETER_TOKEN) String token, @RequestParam("name") String name, @RequestParam(NetworkUtilityClass.PARAMETER_SUBJECT) String subject, HttpServletResponse response) throws IOException {
+    public void removeVisitHistory(@RequestParam(NetworkUtilityClass.PARAMETER_TOKEN) String token,
+                                   @RequestParam(NetworkUtilityClass.PARAMETER_NAME) String name,
+                                   @RequestParam(NetworkUtilityClass.PARAMETER_SUBJECT) String subject,
+                                   HttpServletResponse response) throws IOException {
         response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
         if(!tokenServices.isTokenValid(token)) {

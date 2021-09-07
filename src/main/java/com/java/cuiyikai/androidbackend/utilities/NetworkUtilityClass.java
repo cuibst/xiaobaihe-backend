@@ -24,6 +24,8 @@ public class NetworkUtilityClass {
     public static final String PARAMETER_EMAIL     = "email";
     public static final String PARAMETER_ID        = "id";
     public static final String PARAMETER_COURSE    = "course";
+    public static final String PARAMETER_JSON      = "json";
+    public static final String PARAMETER_NAME      = "name";
 
     public static final String STATUS_OK           = "ok";
     public static final String STATUS_FAIL         = "fail";

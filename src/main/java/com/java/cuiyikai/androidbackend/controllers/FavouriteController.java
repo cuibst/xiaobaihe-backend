@@ -109,7 +109,7 @@ public class FavouriteController {
             return;
         }
         String username = tokenServices.queryUserByToken(token).getUsername();
-        if(!jsonParam.containsKey("name") || !jsonParam.containsKey(NetworkUtilityClass.PARAMETER_SUBJECT) || !jsonParam.containsKey("checked")) {
+        if(!jsonParam.containsKey(NetworkUtilityClass.PARAMETER_NAME) || !jsonParam.containsKey(NetworkUtilityClass.PARAMETER_SUBJECT) || !jsonParam.containsKey("checked")) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
             reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
@@ -252,7 +252,7 @@ public class FavouriteController {
             return;
         }
         String username = tokenServices.queryUserByToken(token).getUsername();
-        if(!jsonParam.containsKey(NetworkUtilityClass.PARAMETER_DIRECTORY) || !jsonParam.containsKey("json")) {
+        if(!jsonParam.containsKey(NetworkUtilityClass.PARAMETER_DIRECTORY) || !jsonParam.containsKey(NetworkUtilityClass.PARAMETER_JSON)) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
             reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
@@ -263,7 +263,7 @@ public class FavouriteController {
 
         logger.info("update {}", jsonParam);
 
-        favouriteServices.updateDirectory(username, jsonParam.getString(NetworkUtilityClass.PARAMETER_DIRECTORY), jsonParam.getJSONArray("json"));
+        favouriteServices.updateDirectory(username, jsonParam.getString(NetworkUtilityClass.PARAMETER_DIRECTORY), jsonParam.getJSONArray(NetworkUtilityClass.PARAMETER_JSON));
         JSONObject reply = new JSONObject();
         reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_OK);
         printWriter.print(reply);
@@ -306,7 +306,7 @@ public class FavouriteController {
             return;
         }
         String username = tokenServices.queryUserByToken(token).getUsername();
-        if(!jsonParam.containsKey(NetworkUtilityClass.PARAMETER_DIRECTORY) || !jsonParam.containsKey("json")) {
+        if(!jsonParam.containsKey(NetworkUtilityClass.PARAMETER_DIRECTORY) || !jsonParam.containsKey(NetworkUtilityClass.PARAMETER_JSON)) {
             response.setStatus(406);
             JSONObject reply = new JSONObject();
             reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_FAIL);
@@ -317,7 +317,7 @@ public class FavouriteController {
 
         logger.info("move {}", jsonParam);
 
-        favouriteServices.moveDirectory(username, jsonParam.getString(NetworkUtilityClass.PARAMETER_DIRECTORY), jsonParam.getJSONArray("json"));
+        favouriteServices.moveDirectory(username, jsonParam.getString(NetworkUtilityClass.PARAMETER_DIRECTORY), jsonParam.getJSONArray(NetworkUtilityClass.PARAMETER_JSON));
         JSONObject reply = new JSONObject();
         reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_OK);
         printWriter.print(reply);

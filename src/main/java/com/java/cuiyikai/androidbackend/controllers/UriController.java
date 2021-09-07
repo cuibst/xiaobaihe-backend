@@ -138,7 +138,7 @@ public class UriController {
                         for (Object obj : data) {
                             JSONObject entity = JSON.parseObject(obj.toString());
                             JSONObject resultObject = new JSONObject();
-                            resultObject.put("name", entity.getString("label"));
+                            resultObject.put(NetworkUtilityClass.PARAMETER_NAME, entity.getString("label"));
                             resultObject.put(NetworkUtilityClass.PARAMETER_SUBJECT, sub);
                             if(results.containsKey(resultObject))
                                 results.replace(resultObject, results.get(resultObject) + 1);
@@ -175,7 +175,7 @@ public class UriController {
                         for (Object obj : result) {
                             JSONObject entity = JSON.parseObject(obj.toString());
                             JSONObject resultObject = new JSONObject();
-                            resultObject.put("name", entity.getString(NetworkUtilityClass.PARAMETER_SUBJECT));
+                            resultObject.put(NetworkUtilityClass.PARAMETER_NAME, entity.getString(NetworkUtilityClass.PARAMETER_SUBJECT));
                             resultObject.put(NetworkUtilityClass.PARAMETER_SUBJECT, visitHistory.getSubject());
                             if(results.containsKey(resultObject))
                                 results.replace(resultObject, results.get(resultObject) + 1);

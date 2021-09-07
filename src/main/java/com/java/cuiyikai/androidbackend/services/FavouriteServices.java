@@ -47,14 +47,14 @@ public class FavouriteServices {
             int flag = -1;
             for(Object obj:array) {
                 JSONObject object = JSON.parseObject(obj.toString());
-                if(object.getString("name").equals(value.getString("name"))) {
+                if(object.getString(NetworkUtilityClass.PARAMETER_NAME).equals(value.getString(NetworkUtilityClass.PARAMETER_NAME))) {
                     flag = array.indexOf(obj);
                     break;
                 }
             }
             if(directorySet.contains(entry.getKey()) && flag == -1) {
                 JSONObject object = new JSONObject();
-                object.put("name", value.getString("name"));
+                object.put(NetworkUtilityClass.PARAMETER_NAME, value.getString(NetworkUtilityClass.PARAMETER_NAME));
                 object.put(NetworkUtilityClass.PARAMETER_SUBJECT, value.getString(NetworkUtilityClass.PARAMETER_SUBJECT));
                 array.add(object);
                 favouriteJson.replace(entry.getKey(), array);
@@ -101,9 +101,9 @@ public class FavouriteServices {
         Set<String> contains = new HashSet<>();
         JSONArray array = favouriteJson.getJSONArray(directoryName);
         for(Object obj : array)
-            contains.add(JSON.parseObject(obj.toString()).getString("name"));
+            contains.add(JSON.parseObject(obj.toString()).getString(NetworkUtilityClass.PARAMETER_NAME));
         for(Object obj : jsonArray)
-            if(!contains.contains(JSON.parseObject(obj.toString()).getString("name")))
+            if(!contains.contains(JSON.parseObject(obj.toString()).getString(NetworkUtilityClass.PARAMETER_NAME)))
                 array.add(obj);
         favouriteJson.replace(directoryName, array);
         logger.info("move {}", favouriteJson);
