@@ -23,14 +23,29 @@ public class TokenServices {
     @Autowired
     UserMapper userMapper;
 
+    /**
+     * Get the latest token with the given username.
+     * @param username the related username.
+     * @return Newest {@link Token} for the given username.
+     */
     public Token queryLatestTokenByUsername(String username) {
         return mapper.queryLatestTokenByUsername(username);
     }
 
+    /**
+     * Delete all tokens of the given user.
+     * @param username the related username.
+     * @return the number of tokens deleted from the database.
+     */
     public int deleteTokenByUsername(String username) {
         return mapper.deleteTokenByUsername(username);
     }
 
+    /**
+     * Insert a new token for the given user
+     * @param username related username
+     * @return the new token String.
+     */
     @Nullable
     public String insertNewToken(String username) {
         User user = userMapper.queryUserByUsername(username);
@@ -56,6 +71,11 @@ public class TokenServices {
         return null;
     }
 
+    /**
+     * Check whether the token is valid.
+     * @param token {@link Token} to be checked.
+     * @return the validity of the given token.
+     */
     public boolean isTokenValid(@Nullable Token token) {
         if(token == null)
             return false;
@@ -65,9 +85,19 @@ public class TokenServices {
         return curDate < expireTime;
     }
 
+    /**
+     * Check whether the token is valid.
+     * @param token token String to be checked.
+     * @return the validity of the given token.
+     */
     public boolean isTokenValid(String token) {
         return mapper.queryValidTokenByToken(token) != null;
     }
 
+    /**
+     * Get the user of the given token.
+     * @param token the related token.
+     * @return The {@link User} if exists, otherwise {@code null}.
+     */
     public User queryUserByToken(String token) {return mapper.queryUserByToken(token);}
 }

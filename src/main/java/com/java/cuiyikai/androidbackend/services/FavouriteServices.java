@@ -11,6 +11,7 @@ import com.java.cuiyikai.androidbackend.utilities.NetworkUtilityClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
@@ -28,6 +29,10 @@ public class FavouriteServices {
     @Autowired
     private UserMapper userMapper;
 
+    /**
+     * Create a default favourite json for the given user.
+     * @param username related username.
+     */
     public void createNewUserDefaultFavourite(String username) {
         User user = userMapper.queryUserByUsername(username);
         JSONObject jsonObject = new JSONObject();
@@ -35,6 +40,16 @@ public class FavouriteServices {
         favouriteMapper.addNewUserFavourite(user.getId(), jsonObject.toJSONString());
     }
 
+    /**
+     * Update the information for 1 entity in the user's favourite.
+     * @param username related username.
+     * @param value the update information, should contains following keys.
+     *              <p>
+     *              "checked" : {@link JSONArray} of Strings of the checked directory names.
+     *              "name"    : entity's name.
+     *              "subject" : entity's subject.
+     *              </p>
+     */
     public void updateFavourite(String username, JSONObject value) {
         Favourite favourite = favouriteMapper.getFavouriteByUsername(username);
         JSONObject favouriteJson = JSON.parseObject(favourite.getJson());
@@ -66,6 +81,11 @@ public class FavouriteServices {
         favouriteMapper.updateUserFavourite(userMapper.queryUserByUsername(username).getId(), favouriteJson.toJSONString());
     }
 
+    /**
+     * Remove a directory from user's favourite json.
+     * @param username related username
+     * @param directoryName related directory name.
+     */
     public void removeDirectory(String username, String directoryName) {
         Favourite favourite = favouriteMapper.getFavouriteByUsername(username);
         JSONObject favouriteJson = JSON.parseObject(favourite.getJson());
@@ -73,6 +93,12 @@ public class FavouriteServices {
         favouriteMapper.updateUserFavourite(userMapper.queryUserByUsername(username).getId(), favouriteJson.toJSONString());
     }
 
+    /**
+     * Add a new empty directory to user's favourite json.
+     * @param username related username.
+     * @param directoryName new directory name.
+     * @return whether the new directory is added.
+     */
     public boolean addDirectory(String username, String directoryName) {
         Favourite favourite = favouriteMapper.getFavouriteByUsername(username);
         JSONObject favouriteJson = JSON.parseObject(favourite.getJson());
@@ -83,6 +109,12 @@ public class FavouriteServices {
         return true;
     }
 
+    /**
+     * Update a directory of a user's favourite json to new json.
+     * @param username related username.
+     * @param directoryName related diectory name.
+     * @param jsonArray new directory json.
+     */
     public void updateDirectory(String username, String directoryName, JSONArray jsonArray) {
         Favourite favourite = favouriteMapper.getFavouriteByUsername(username);
         JSONObject favouriteJson = JSON.parseObject(favourite.getJson());
@@ -93,6 +125,12 @@ public class FavouriteServices {
         favouriteMapper.updateUserFavourite(userMapper.queryUserByUsername(username).getId(), favouriteJson.toJSONString());
     }
 
+    /**
+     * Copy the entities of the given array to the new directory.
+     * @param username related username.
+     * @param directoryName related directory name.
+     * @param jsonArray list of the entities to be added.
+     */
     public void moveDirectory(String username, String directoryName, JSONArray jsonArray) {
         Favourite favourite = favouriteMapper.getFavouriteByUsername(username);
         JSONObject favouriteJson = JSON.parseObject(favourite.getJson());
@@ -110,6 +148,12 @@ public class FavouriteServices {
         favouriteMapper.updateUserFavourite(userMapper.queryUserByUsername(username).getId(), favouriteJson.toJSONString());
     }
 
+    /**
+     * Get a user's favourite json by username.
+     * @param username related username.
+     * @return the {@link Favourite} of the given user.
+     */
+    @Nullable
     public Favourite getFavouriteByUsername(String username) {
         return favouriteMapper.getFavouriteByUsername(username);
     }
