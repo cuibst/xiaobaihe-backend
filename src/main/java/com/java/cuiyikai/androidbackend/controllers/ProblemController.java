@@ -19,18 +19,16 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static com.java.cuiyikai.androidbackend.utilities.NetworkUtilityClass.buildForm;
-import static com.java.cuiyikai.androidbackend.utilities.NetworkUtilityClass.setConnectionHeader;
-
+/**
+ * <p> {@link Controller} for the problem-related apis. </p>
+ * <p> Mapped to url {@code "/api/problem"}</p>
+ */
 @Controller
 @RequestMapping("/api/problem")
 public class ProblemController {
@@ -46,14 +44,39 @@ public class ProblemController {
     @Autowired
     private ProblemServices problemServices;
 
-    private static final ExecutorService executorService = Executors.newCachedThreadPool();
+    private static final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
+    /**
+     * <p>Get the first 15 suggest problems after offset according to user's search history and visit history</p>
+     * <p>Map to url {@code "/"}</p>
+     * <p>Uses {@link RequestMethod#GET} method.</p>
+     * <p>Reply a {@link JSONObject} as follows:</p>
+     * <pre>{@code
+     * {
+     *     "status" : "ok" / "fail",
+     *     "data"   : [{
+     *         "problem" : {
+     *             "qBody" : < problem statement >,
+     *             "qAnswer" : < problem answer >
+     *         },
+     *         "subject" : < problem subject >
+     *     }, ...]
+     * }
+     * }</pre>
+     * @param token User's request token.
+     * @param offset (optional) default value is 0. offset of the data array. result will begin from the offset th problem.
+     * @param response A {@link HttpServletResponse}, see {@link GetMapping}.
+     * @throws IOException see {@link GetMapping}
+     */
     @GetMapping("/")
     public void getSuggestProblem(@RequestParam(NetworkUtilityClass.PARAMETER_TOKEN) String token,
                                   @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
                                   HttpServletResponse response) throws IOException {
         response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
+
+        //Phase 1: Get the visit id of edukg backend.
+
         String id;
         try {
             id = executorService.submit(new LoginCallable()).get();
@@ -74,6 +97,8 @@ public class ProblemController {
             printWriter.print(reply);
             return;
         }
+
+        //Phase 2: Get according user, and latest histories.
         User user = tokenServices.queryUserByToken(token);
         List<VisitHistory> visitHistoryList = historyServices.getLatestVisitHistoryByUserId(user.getId());
         List<SearchHistory> searchHistoryList = historyServices.getLatestHistoryByUsername(user.getUsername());
@@ -101,6 +126,8 @@ public class ProblemController {
             problemSubjects.add(visitHistory.getSubject());
         }
 
+        //Phase 3: Based on the histories, get the related problems.
+        //    3.1: From the search histories, get related entities.
         for(int i=0;i<futureSearchResultList.size();i++) {
             if(futureProblems.size() >= 10)
                 break;
@@ -129,6 +156,7 @@ public class ProblemController {
             }
         }
 
+        //    3.2: Based on all the entities, get related problems.
         for(int i=0;i<futureProblems.size();i++) {
             Future<JSONArray> futureProblem = futureProblems.get(i);
             JSONArray problem;
@@ -156,6 +184,7 @@ public class ProblemController {
                 }
         }
 
+        //Phase 4: Fetch the most possible ones after offset.
         List<Map.Entry<JSONObject, Integer>> entryList = new ArrayList<>(results.entrySet());
         entryList.sort(Map.Entry.comparingByValue());
         Collections.reverse(entryList);
@@ -172,6 +201,20 @@ public class ProblemController {
         printWriter.print(reply);
     }
 
+    /**
+     * <p>Add a new problem to user's problem book</p>
+     * <p>Map to url {@code "/addNewSave"}</p>
+     * <p>Use {@link RequestMethod#POST} method.</p>
+     * <p>Return a {@link JSONObject} only include key status.</p>
+     * @param jsonParam A request {@link JSONObject}, shoul contain following keys.
+     *                  <p>
+     *                  "token" : User's request token.
+     *                  "problem" : A {@link JSONObject}, should contain qAnswer and qBody key.
+     *                  "subject" : Problems subject.
+     *                  </p>
+     * @param response A {@link HttpServletResponse}, see {@link PostMapping}.
+     * @throws IOException see {@link PostMapping}
+     */
     @PostMapping("/addNewSave")
     public void addNewSaveProblem(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
         logger.info("Add new save problem : {}", jsonParam);
@@ -203,6 +246,28 @@ public class ProblemController {
         printWriter.print(reply);
     }
 
+    /**
+     * <p>Get all the problems from user's problem book</p>
+     * <p>Map to url {@code "/getSaves"}</p>
+     * <p>Use {@link RequestMethod#GET} method.</p>
+     * <p>Reply a {@link JSONObject} as follows:</p>
+     * <pre>{@code
+     * {
+     *     "status" : "ok" / "fail",
+     *     "data"   : [{
+     *         "problem" : {
+     *             "qBody" : < problem statement >,
+     *             "qAnswer" : < problem answer >
+     *         },
+     *         "subject" : < problem subject >
+     *     }, ...]
+     * }
+     * }</pre>
+     * @param token user's request token
+     * @param offset (optional) default value is 0. offset of the data array. result will begin from the offset th problem.
+     * @param response A {@link HttpServletResponse}, see {@link GetMapping}.
+     * @throws IOException see {@link GetMapping}
+     */
     @GetMapping("/getSaves")
     public void getSaves(@RequestParam(NetworkUtilityClass.PARAMETER_TOKEN) String token, @RequestParam(value = "offset", required = false, defaultValue = "0") int offset, HttpServletResponse response) throws IOException {
         response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
@@ -231,6 +296,20 @@ public class ProblemController {
         printWriter.print(reply);
     }
 
+    /**
+     * <p>Delete a problem from user's problem book</p>
+     * <p>Map to url {@code "/deleteSave"}</p>
+     * <p>Use {@link RequestMethod#POST} method.</p>
+     * <p>Return a {@link JSONObject} only include key status.</p>
+     * @param jsonParam A request {@link JSONObject}, shoul contain following keys.
+     *                  <p>
+     *                  "token" : User's request token.
+     *                  "problem" : A {@link JSONObject}, should contain qAnswer and qBody key.
+     *                  "subject" : Problems subject.
+     *                  </p>
+     * @param response A {@link HttpServletResponse}, see {@link PostMapping}.
+     * @throws IOException see {@link PostMapping}
+     */
     @PostMapping("/deleteSave")
     public void deleteSaveProblem(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
         response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);

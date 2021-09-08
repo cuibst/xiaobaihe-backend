@@ -27,8 +27,7 @@ import static com.java.cuiyikai.androidbackend.utilities.NetworkUtilityClass.set
  * <p> Returns data in {@link JSONArray}, each object inside as follows. </p>
  * <pre>{@code
  * {
- *     "subject"   : < A String represent entity name. >
- *     "predicate" : < A String represent relation name. >
+ *     "subject_label" / "object_label" : < A String represent entity name. >
  * }
  * }</pre>
  */
@@ -42,7 +41,7 @@ public class RelatedCallable implements Callable<JSONArray> {
      * Only constructor for {@link RelatedCallable}
      * @param args A {@link Map} represent the request arguments, <strong>must</strong> include these keys:
      *             <p>"id" : request key for edukg. <br>
-     *                "subjectName" : The name of the {@link Uri} you want to query. <br>
+     *                "name" : The name of the {@link Uri} you want to query. <br>
      *                "course" : The subject of uri
      *             </p>
      */
@@ -57,15 +56,12 @@ public class RelatedCallable implements Callable<JSONArray> {
      */
     @Override
     public JSONArray call() throws Exception {
-        URL url = new URL("http://open.edukg.cn/opedukg/api/typeOpen/open/relatedsubject");
-        HttpURLConnection cardConnection = (HttpURLConnection) url.openConnection();
-        setConnectionHeader(cardConnection, "POST");
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(cardConnection.getOutputStream(), StandardCharsets.UTF_8));
         String formData = buildForm(args);
-        writer.write(formData);
+        URL url = new URL("http://open.edukg.cn/opedukg/api/typeOpen/open/infoByInstanceName?" + formData);
+        HttpURLConnection cardConnection = (HttpURLConnection) url.openConnection();
+        setConnectionHeader(cardConnection, "GET");
         logger.info("{}", url);
         logger.info("Relate callable form : {}", formData);
-        writer.flush();
         JSONArray result;
         if(cardConnection.getResponseCode() == 200)
         {
@@ -76,11 +72,13 @@ public class RelatedCallable implements Callable<JSONArray> {
                 buffer.append(line);
             }
             JSONObject cardResponse = JSON.parseObject(buffer.toString());
-            result = cardResponse.getJSONArray(NetworkUtilityClass.PARAMETER_DATA);
+            if(cardResponse.containsKey("data"))
+                result = cardResponse.getJSONObject(NetworkUtilityClass.PARAMETER_DATA).getJSONArray("content");
+            else
+                result = new JSONArray();
         }
         else
             return new JSONArray();
-        writer.close();
         cardConnection.disconnect();
         return result;
     }

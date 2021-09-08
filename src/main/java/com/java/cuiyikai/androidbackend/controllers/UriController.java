@@ -20,16 +20,11 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
-import java.net.*;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import static com.java.cuiyikai.androidbackend.utilities.NetworkUtilityClass.buildForm;
-import static com.java.cuiyikai.androidbackend.utilities.NetworkUtilityClass.setConnectionHeader;
 
 @Controller
 @RequestMapping("/api/uri")
@@ -44,7 +39,7 @@ public class UriController {
     @Autowired
     TokenServices tokenServices;
 
-    private static final ExecutorService executorService = Executors.newCachedThreadPool();
+    private static final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     Logger logger = LoggerFactory.getLogger(UriController.class);
 
@@ -99,6 +94,7 @@ public class UriController {
                 Map<JSONObject, Integer> results = new HashMap<>();
                 List<Future<JSONArray>> futureSearchResultList = new ArrayList<>();
                 List<String> subjects = new ArrayList<>();
+                List<Future<JSONArray>> futureRelateList = new ArrayList<>();
                 for(SearchHistory searchHistory : searchHistoryList) {
                     Map<String,String> args1 = new HashMap<>();
                     args1.put(NetworkUtilityClass.PARAMETER_ID, id);
@@ -136,13 +132,12 @@ public class UriController {
                     }
                 }
 
-                List<Future<JSONArray>> futureRelateList = new ArrayList<>();
 
                 for(VisitHistory visitHistory : visitHistoryList) {
                     Map<String, String> args1 = new HashMap<>();
                     args1.put(NetworkUtilityClass.PARAMETER_ID, id);
                     args1.put(NetworkUtilityClass.PARAMETER_COURSE, visitHistory.getSubject());
-                    args1.put("subjectName", visitHistory.getName());
+                    args1.put("name", visitHistory.getName());
                     futureRelateList.add(executorService.submit(new RelatedCallable(args1)));
                 }
 
@@ -159,11 +154,15 @@ public class UriController {
                         continue;
                     }
                     VisitHistory visitHistory = visitHistoryList.get(i);
+
                     if(result != null) {
                         for (Object obj : result) {
                             JSONObject entity = JSON.parseObject(obj.toString());
                             JSONObject resultObject = new JSONObject();
-                            resultObject.put(NetworkUtilityClass.PARAMETER_NAME, entity.getString(NetworkUtilityClass.PARAMETER_SUBJECT));
+                            if(entity.containsKey(NetworkUtilityClass.PARAMETER_SUBJECT))
+                                resultObject.put(NetworkUtilityClass.PARAMETER_NAME, entity.getString("subject_label"));
+                            else
+                                resultObject.put(NetworkUtilityClass.PARAMETER_NAME, entity.getString("object_label"));
                             resultObject.put(NetworkUtilityClass.PARAMETER_SUBJECT, visitHistory.getSubject());
                             if(results.containsKey(resultObject))
                                 results.replace(resultObject, results.get(resultObject) + 1);
