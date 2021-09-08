@@ -18,6 +18,10 @@ import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+/**
+ * {@link Controller} for user-info-related apis.
+ * Mapped to url {@code "/api/user"}
+ */
 @Controller
 @RequestMapping("/api/user")
 public class UserController {
@@ -30,6 +34,21 @@ public class UserController {
     @Autowired
     private UserServices userServices;
 
+    /**
+     * <p>Change user's info in the database</p>
+     * <p>Will resend validate email if the email is changed.</p>
+     * <p>Use {@link org.springframework.web.bind.annotation.RequestMethod#GET} method, and map to url {@code "/changeInfo"}.</p>
+     * <p>Reply a {@link JSONObject} contains status and message.</p>
+     * @param jsonParam A {@link JSONObject} contains following keys:
+     *                  <p>
+     *                  "token" : user's request token.
+     *                  "oldPassword" : user's original password.
+     *                  "password" : user's new password, if password not changed, please fill it with old password.
+     *                  "email" user's new email. Please fill original one if not changed.
+     *                  </p>
+     * @param response
+     * @throws IOException
+     */
     @PostMapping("/changeInfo")
     public void changeUserInfo(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
         response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
