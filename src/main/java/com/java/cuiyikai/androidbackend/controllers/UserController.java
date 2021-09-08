@@ -8,6 +8,7 @@ import com.java.cuiyikai.androidbackend.utilities.NetworkUtilityClass;
 import org.apache.commons.mail.HtmlEmail;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,8 +47,8 @@ public class UserController {
      *                  "password" : user's new password, if password not changed, please fill it with old password.
      *                  "email" user's new email. Please fill original one if not changed.
      *                  </p>
-     * @param response
-     * @throws IOException
+     * @param response A {@link HttpServletResponse}, see {@link GetMapping}.
+     * @throws IOException see {@link GetMapping}
      */
     @PostMapping("/changeInfo")
     public void changeUserInfo(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {

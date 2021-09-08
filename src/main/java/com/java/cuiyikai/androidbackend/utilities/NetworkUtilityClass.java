@@ -42,6 +42,12 @@ public class NetworkUtilityClass {
         throw new UnsupportedOperationException("utility class");
     }
 
+    /**
+     * Set the connection header for the given connection.
+     * @param connection related connection
+     * @param method connection method, {@code "POST"} for {@link org.springframework.web.bind.annotation.RequestMethod#POST} and {@code "GET"} for {@link org.springframework.web.bind.annotation.RequestMethod#GET}
+     * @throws ProtocolException when the given method is not supported.
+     */
     public static void setConnectionHeader(HttpURLConnection connection, String method) throws ProtocolException {
         logger.info("Set connection method : {}", method);
         connection.setRequestMethod(method);
@@ -56,6 +62,11 @@ public class NetworkUtilityClass {
         connection.setDoInput(true);
     }
 
+    /**
+     * Build a form for the given form data
+     * @param form the {@link Map} of the form.
+     * @return the String of the form data.
+     */
     public static String buildForm(Map<String,String> form) {
         if(form.size() == 0)
             return "";

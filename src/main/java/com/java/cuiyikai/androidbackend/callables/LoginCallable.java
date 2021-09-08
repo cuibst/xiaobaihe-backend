@@ -30,7 +30,7 @@ public class LoginCallable implements Callable<String> {
     /**
      * {@inheritDoc}
      * @return the id for edukg.
-     * @throws Exception
+     * @throws Exception when the process failed.
      */
     @Override
     public String call() throws Exception {

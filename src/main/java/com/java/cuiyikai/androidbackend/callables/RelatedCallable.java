@@ -52,7 +52,7 @@ public class RelatedCallable implements Callable<JSONArray> {
     /**
      * {@inheritDoc}
      * @return A {@link JSONArray} described above.
-     * @throws Exception
+     * @throws Exception when the process failed.
      */
     @Override
     public JSONArray call() throws Exception {

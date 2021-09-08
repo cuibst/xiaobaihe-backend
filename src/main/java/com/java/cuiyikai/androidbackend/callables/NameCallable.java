@@ -64,7 +64,7 @@ public class NameCallable implements Callable<JSONObject> {
      *      "subject" : < String represents Uri's subject. >
      * }
      * }</pre>
-     * @throws Exception
+     * @throws Exception when the process failed.
      */
     @Override
     public JSONObject call() throws Exception {
