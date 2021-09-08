@@ -26,6 +26,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+/**
+ * {@link Controller} for uri-related apis.
+ * Mapped to {@code "/api/uri"}
+ */
 @Controller
 @RequestMapping("/api/uri")
 public class UriController {
@@ -39,10 +43,22 @@ public class UriController {
     @Autowired
     TokenServices tokenServices;
 
-    private static final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private static final ExecutorService executorService = Executors.newCachedThreadPool();
 
     Logger logger = LoggerFactory.getLogger(UriController.class);
 
+    /**
+     * <p>Add a new uri to the database whose name is not filled.</p>
+     * <p>Use {@link RequestMethod#POST} method and map to {@code "/add"}.</p>
+     * <p>Reply a {@link JSONObject} only contains status.</p>
+     * @param jsonParam A {@link JSONObject} contains following keys.
+     *                  <p>
+     *                  "uri"     : the uri of the entity.
+     *                  "subject" : the subject of the uri.
+     *                  </p>
+     * @param response A {@link HttpServletResponse}, see {@link PostMapping}.
+     * @throws IOException see {@link PostMapping}
+     */
     @PostMapping("/add")
     public void addUri(@RequestBody JSONObject jsonParam, HttpServletResponse response) throws IOException {
         response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
@@ -56,11 +72,33 @@ public class UriController {
         printWriter.print(reply);
     }
 
+    /**
+     * <p>Get a entity name list from the database and edukg backend.</p>
+     * <p>Use {@link RequestMethod#GET} method and map to {@code "/getname"}.</p>
+     * <p>Reply a {@link JSONObject} as follows.</p>
+     * <pre>{@code
+     * {
+     *     "status" : < request status, ok or fail >,
+     *     "message" : < reply message, only exist when failed >,
+     *     "data" : [{
+     *         "name" : < uri name >,
+     *         "subject" : < uri's subject >
+     *     }, ...]
+     * }
+     * }</pre>
+     * @param subject (optional) default value "", request subject. "" means return suggest or random uris.
+     * @param token (optional) default value "", user's request token. Only useful when {@code subject = ""}.
+     *              If the token is valid, it will return suggest uri, otherwise random uris.
+     * @param offset (optional) default value is 0. offset of the data array. result will begin from the offset th uri.
+     * @param response A {@link HttpServletResponse}, see {@link GetMapping}.
+     * @throws IOException see {@link GetMapping}
+     */
     @GetMapping("/getname")
     public void getName(@RequestParam(name = NetworkUtilityClass.PARAMETER_SUBJECT, required = false, defaultValue = "") String subject,
                         @RequestParam(name = NetworkUtilityClass.PARAMETER_TOKEN, required = false, defaultValue = "") String token,
                         @RequestParam(name = "offset", required = false, defaultValue = "0") int offset, HttpServletResponse response)
             throws IOException {
+        //Phase 1: Validate the request and get the edukg id.
         response.setHeader(NetworkUtilityClass.CONTENT_TYPE, NetworkUtilityClass.JSON_CONTENT_TYPE);
         PrintWriter printWriter = response.getWriter();
         List<Uri> uriList;
@@ -84,10 +122,17 @@ public class UriController {
             printWriter.print(reply);
             return;
         }
+
+        //Phase 2: return the uris.
+
         if(subject.equals("")) {
+
+            //    2.1: suggest or random
+
             if(!tokenServices.isTokenValid(token))
                 uriList = uriServices.getRandomUri();
             else {
+                //    2.1.1: get user and get the latest related histories.
                 User user = tokenServices.queryUserByToken(token);
                 List<VisitHistory> visitHistoryList = historyServices.getLatestVisitHistoryByUserId(user.getId());
                 List<SearchHistory> searchHistoryList = historyServices.getLatestHistoryByUsername(user.getUsername());
@@ -95,6 +140,8 @@ public class UriController {
                 List<Future<JSONArray>> futureSearchResultList = new ArrayList<>();
                 List<String> subjects = new ArrayList<>();
                 List<Future<JSONArray>> futureRelateList = new ArrayList<>();
+
+                //    2.1.2: get related entities from search histories.
                 for(SearchHistory searchHistory : searchHistoryList) {
                     Map<String,String> args1 = new HashMap<>();
                     args1.put(NetworkUtilityClass.PARAMETER_ID, id);
@@ -132,7 +179,7 @@ public class UriController {
                     }
                 }
 
-
+                //    2.1.3: get entities from visit histories.
                 for(VisitHistory visitHistory : visitHistoryList) {
                     Map<String, String> args1 = new HashMap<>();
                     args1.put(NetworkUtilityClass.PARAMETER_ID, id);
@@ -172,6 +219,7 @@ public class UriController {
                     }
                 }
 
+                //Phase 4: sort the uri lists and return.
                 logger.info("Result : {}", results);
 
                 List<Map.Entry<JSONObject, Integer>> entryList = new ArrayList<>(results.entrySet());
@@ -192,6 +240,9 @@ public class UriController {
         }
         else
             uriList = uriServices.getRandomUriBySubject(subject);
+
+        //Phase 3: Get uris according to the uris, request from database and edukg.
+
         JSONObject reply = new JSONObject();
         reply.put(NetworkUtilityClass.PARAMETER_STATUS, NetworkUtilityClass.STATUS_OK);
         JSONArray uriNames = new JSONArray();
